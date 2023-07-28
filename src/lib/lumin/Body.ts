@@ -38,8 +38,14 @@ export default class Body<T extends Shape>
 
     public readonly restitution: number
 
+
     public constructor(shape: T, position: Vector2, angle: number,
-        { type = BodyType.Dynamic, friction = 0.3, staticFriction = 0.5, restitution = 0.2 }: BodyParams = {})
+    {
+        type = BodyType.Dynamic,
+        friction = 0.3,
+        staticFriction = 0.5,
+        restitution = 0.2
+    }: BodyParams = {})
     {
         this.shape = shape
 
@@ -64,6 +70,8 @@ export default class Body<T extends Shape>
         this.staticFriction = staticFriction
 
         this.restitution = restitution
+
+        this.shape.update(this)
     }
 
     public is<T extends Shape>(shape: Constructor<T>): this is Body<T> { return this.shape instanceof shape }
@@ -89,8 +97,13 @@ export default class Body<T extends Shape>
     {
         this.previousPosition = this.position
         this.previousAngle = this.angle
-        if (this.type === BodyType.Static) return
 
+        if (this.type === BodyType.Dynamic) this.integrate(delta, gravity)
+        this.shape.update(this)
+    }
+
+    private integrate(delta: number, gravity: Vector2)
+    {
         // Calculate acceleration
         let acceleration = this.force.mul(this.mass).add(gravity)
 
@@ -115,6 +128,12 @@ export default class Body<T extends Shape>
         // Interpolate position
         let position = Vector2.lerp(this.previousPosition, this.position, alpha)
         let angle = this.lerp(this.previousAngle, this.angle, alpha)
+
+        // let bound = this.shape.getBounds(this)
+
+        // c.strokeWidth = 1
+        // c.strokeStyle = "gray"
+        // c.strokeRect(bound.min.x, bound.min.y, bound.max.x - bound.min.x, bound.max.y - bound.min.y)
 
         // Apply transformations
         c.save()

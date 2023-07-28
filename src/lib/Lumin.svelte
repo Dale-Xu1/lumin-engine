@@ -65,7 +65,7 @@ onMount(() =>
 
         public override update(delta: number, gravity: Vector2)
         {
-            let speed = 50
+            let speed = 20
 
             let offset = Vector2.ZERO
             let angle = 0
@@ -78,10 +78,7 @@ onMount(() =>
             if (this.cw) angle -= 1
             if (this.ccw) angle += 1
 
-            // this.position = this.position.add(offset.normalize().mul(speed))
-            // this.angle += angle * speed
-
-            this.applyForce(offset.normalize().mul(speed))
+            this.applyForce(offset.normalize().mul(speed * 5))
             this.applyTorque(angle * speed)
 
             super.update(delta, gravity)

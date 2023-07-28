@@ -3,7 +3,7 @@ import type Body from "./Body"
 import type Shape from "./Shape"
 import { Circle, Polygon } from "./Shape"
 
-const SLOP = 0.01
+const SLOP = 0
 
 export class Manifold
 {
@@ -32,6 +32,8 @@ export class Manifold
     public resolve(rate: number)
     {
         this.correctPositions(rate)
+        if (this.penetration < SLOP) return
+        
         for (let contact of this.contacts) this.applyImpulse(contact)
     }
 
@@ -92,7 +94,7 @@ export class Manifold
         let tangent = rv.sub(normal.mul(rv.dot(normal))).normalize()
         let jt = -rv.dot(tangent) * share
 
-        // Colummb's Law
+        // Coulomb's Law
         let friction = (this.a.friction + this.b.friction) / 2
         let staticFriction = (this.a.staticFriction + this.b.staticFriction) / 2
 
@@ -175,13 +177,12 @@ namespace Collision
     export function polygonPolygon(a: Body<Polygon>, b: Body<Polygon>): Manifold | null
     {
         // Find axis of least penetration
-        let u = findAxis(a, b)
-        if (u === null) return null
+        let u = findAxis(a, b); if (u === null) return null
+        let v = findAxis(b, a); if (v === null) return null
 
-        let v = findAxis(b, a)
-        if (v === null) return null
-
-        let [i, penetration, [vertices, normals]] = u[1] < v[1] ? u : ([a, b] = [b, a], v)
+        let [i, penetration] = u[1] < v[1] ? u : ([a, b] = [b, a], v)
+        let vertices = a.shape.transform.vertices
+        let normals = a.shape.transform.normals
 
         // Index i refers to the reference face on polygon A
         let normal = normals[i]
@@ -208,11 +209,10 @@ namespace Collision
         return new Manifold(a, b, contacts, normal, penetration)
     }
 
-    function findAxis(a: Body<Polygon>, b: Body<Polygon>): [number, number, [Vector2[], Vector2[]]] | null
+    function findAxis(a: Body<Polygon>, b: Body<Polygon>): [number, number] | null
     {
-        // Apply rotation to vertices and normals
-        let vertices = a.shape.vertices.map(vertex => vertex.rotate(a.angle))
-        let normals = a.shape.normals.map(normal => normal.rotate(a.angle))
+        let vertices = a.shape.transform.vertices
+        let normals = a.shape.transform.normals
 
         let index: number, min = Infinity
         for (let i = 0; i < vertices.length; i++)
@@ -228,12 +228,12 @@ namespace Collision
             }
         }
 
-        return [index!, min, [vertices, normals]]
+        return [index!, min]
     }
 
     function findSupport(a: Body<Polygon>, b: Body<Polygon>, face: Vector2, normal: Vector2): number | null
     {
-        let vertices = b.shape.vertices.map(vertex => vertex.rotate(b.angle))
+        let vertices = b.shape.transform.vertices
         let offset = b.position.sub(a.position)
 
         let max: number | null = null
@@ -252,10 +252,10 @@ namespace Collision
 
     function findIncident(b: Body<Polygon>, normal: Vector2): [Vector2, Vector2]
     {
-        let normals = b.shape.normals.map(normal => normal.rotate(b.angle))
-
         // Find normal on B that is most in the opposite direction as the normal of the reference face
+        let normals = b.shape.transform.normals
         let index: number, min = Infinity
+
         for (let i = 0; i < normals.length; i++)
         {
             let compare = normal.dot(normals[i])
@@ -266,7 +266,7 @@ namespace Collision
             }
         }
 
-        return Vector2.pair(b.shape.vertices, index!).map(v => v.rotate(b.angle)) as [Vector2, Vector2]
+        return Vector2.pair(b.shape.transform.vertices, index!)
     }
 
     function clip(vertex: Vector2, direction: Vector2, i1: Vector2, i2: Vector2): [Vector2, Vector2]
@@ -283,9 +283,8 @@ namespace Collision
 
     export function polygonCircle(a: Body<Polygon>, b: Body<Circle>): Manifold | null
     {
-        // Apply rotation to vertices and normals
-        let vertices = a.shape.vertices.map(vertex => vertex.rotate(a.angle))
-        let normals = a.shape.normals.map(normal => normal.rotate(a.angle))
+        let vertices = a.shape.transform.vertices
+        let normals = a.shape.transform.normals
 
         // Find axis of least penetration
         let edge = findEdge(a, b, vertices, normals)

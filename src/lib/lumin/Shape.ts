@@ -1,36 +1,32 @@
 import Vector2 from "../math/Vector2"
 import type Body from "./Body"
 
+export class Bounds
+{
+
+    public constructor(public readonly min: Vector2, public readonly max: Vector2) { }
+
+}
+
 export default abstract class Shape
 {
 
-    public static testBounds(a: Body<Shape>, b: Body<Shape>): boolean
-    {
-        let distSq = a.position.sub(b.position).lengthSq
-        let radius = a.shape.bound + b.shape.bound
-
-        return distSq <= radius * radius
-    }
-
-    protected constructor(protected readonly density: number, private readonly bound: number) { }
+    protected constructor(protected readonly density: number) { }
 
 
     public abstract calculate(): [number, number]
+
+    public abstract getBounds(body: Body<this>): Bounds
+
+    public update(body: Body<this>) { }
     public abstract render(c: CanvasRenderingContext2D): void
 
 }
 
-
 export class Circle extends Shape
 {
 
-    public radius: number
-
-    public constructor(radius: number, density: number = 1)
-    {
-        super(density, radius)
-        this.radius = radius
-    }
+    public constructor(public readonly radius: number, density: number = 1) { super(density) }
 
 
     public override calculate(): [number, number]
@@ -41,6 +37,12 @@ export class Circle extends Shape
         let inertia = mass * rs / 2
 
         return [mass, inertia]
+    }
+
+    public override getBounds(body: Body<this>): Bounds
+    {
+        let r = new Vector2(this.radius, this.radius)
+        return new Bounds(body.position.sub(r), body.position.add(r))
     }
 
     public override render(c: CanvasRenderingContext2D)
@@ -63,22 +65,22 @@ export class Circle extends Shape
 
 }
 
+export class Transform
+{
+
+    public constructor(public readonly vertices: Vector2[], public readonly normals: Vector2[] = []) { }
+
+}
+
 export class Polygon extends Shape
 {
 
-    public readonly vertices: Vector2[]
     public readonly normals: Vector2[] = []
+    public transform!: Transform
 
-
-    public constructor(vertices: Vector2[], density: number = 1)
+    public constructor(public readonly vertices: Vector2[], density: number = 1)
     {
-        let max = 0
-        for (let vertex of vertices)
-        {
-            let len = vertex.lengthSq
-            if (len > max) max = len
-        }
-        super(density, Math.sqrt(max))
+        super(density)
 
         // Calculate normals
         this.vertices = vertices
@@ -117,6 +119,34 @@ export class Polygon extends Shape
         return [mass, inertia]
     }
 
+    public override getBounds(body: Body<this>): Bounds
+    {
+        // Compute AABB for polygon
+        let minX = Infinity, minY = Infinity
+        let maxX = -Infinity, maxY = -Infinity
+
+        for (let vertex of this.transform.vertices)
+        {
+            if (vertex.x > maxX) maxX = vertex.x
+            if (vertex.x < minX) minX = vertex.x
+            if (vertex.y > maxY) maxY = vertex.y
+            if (vertex.y < minY) minY = vertex.y
+        }
+
+        let min = new Vector2(minX, minY)
+        let max = new Vector2(maxX, maxY)
+
+        return new Bounds(body.position.add(min), body.position.add(max))
+    }
+
+    public override update(body: Body<this>)
+    {
+        let vertices = this.vertices.map(vertex => vertex.rotate(body.angle))
+        let normals = this.normals.map(normal => normal.rotate(body.angle))
+
+        this.transform = new Transform(vertices, normals)
+    }
+
     public override render(c: CanvasRenderingContext2D)
     {
         // Render normals
@@ -150,11 +180,7 @@ export class Polygon extends Shape
 export class Rectangle extends Polygon
 {
 
-    public readonly width: number
-    public readonly height: number
-
-
-    public constructor(width: number, height: number, density: number = 1)
+    public constructor(public readonly width: number, public readonly height: number, density: number = 1)
     {
         let w = width / 2
         let h = height / 2

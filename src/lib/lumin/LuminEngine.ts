@@ -3,7 +3,7 @@ import type Body from "./Body"
 import { BodyType } from "./Body"
 import type { Manifold } from "./Collision"
 import Collision from "./Collision"
-import Shape from "./Shape"
+import type Shape from "./Shape"
 
 declare global
 {
@@ -78,7 +78,7 @@ export interface SceneParams
     gravity?: Vector2
 
     iterations?: number
-    rate?: number
+    correctionRate?: number
 
 }
 
@@ -94,13 +94,17 @@ export class Scene
     private readonly rate: number
 
     public constructor(camera: Camera,
-        { gravity = Vector2.DOWN.mul(9.81), iterations = 12, rate = 0.4 }: SceneParams = {})
+    {
+        gravity = Vector2.DOWN.mul(9.81),
+        iterations = 12,
+        correctionRate = 0.4
+    }: SceneParams = {})
     {
         this.camera = camera
         this.gravity = gravity
 
         this.iterations = iterations
-        this.rate = rate
+        this.rate = correctionRate
     }
 
 
@@ -115,20 +119,11 @@ export class Scene
 
     private resolve()
     {
-        // Test for collisions
-        let collisions: Manifold[] = []
-        for (let i = 0; i < this.bodies.length; i++) for (let j = i + 1; j < this.bodies.length; j++)
-        {
-            let a = this.bodies[i], b = this.bodies[j]
-            if (a.type === BodyType.Static && b.type === BodyType.Static) continue // Ignore if both bodies are static
+        let detector = new Detector(this.bodies)
 
-            if (!Shape.testBounds(a, b)) continue
-            let collision = Collision.test(a, b)
-
-            if (collision) collisions.push(collision)
-        }
-
+        let collisions = detector.detect()
         for (let collision of collisions) collision.resolve(this.rate)
+
         this.collisions.push(...collisions)
     }
 
@@ -139,6 +134,29 @@ export class Scene
 
         for (let collision of this.collisions) collision.render(c)
         for (let body of this.bodies) body.render(c, alpha)
+    }
+
+}
+
+class Detector
+{
+
+    public constructor(private readonly bodies: Body<Shape>[]) { }
+
+    public detect(): Manifold[]
+    {
+        // TODO: Sweep and prune
+        let collisions: Manifold[] = []
+        for (let i = 0; i < this.bodies.length; i++) for (let j = i + 1; j < this.bodies.length; j++)
+        {
+            let a = this.bodies[i], b = this.bodies[j]
+            if (a.type === BodyType.Static && b.type === BodyType.Static) continue // Ignore if both bodies are static
+
+            let collision = Collision.test(a, b)
+            if (collision) collisions.push(collision)
+        }
+
+        return collisions
     }
 
 }
@@ -155,8 +173,7 @@ export class Camera
     public position: Vector2
     public size: number
 
-    public constructor(canvas: HTMLCanvasElement, width: number, height: number,
-        position: Vector2, size: number = 20)
+    public constructor(canvas: HTMLCanvasElement, width: number, height: number, position: Vector2, size: number = 20)
     {
         this.canvas = canvas
         this.context = canvas.getContext("2d")!
