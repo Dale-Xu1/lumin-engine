@@ -145,18 +145,40 @@ class Detector
 
     public detect(): Manifold[]
     {
-        // TODO: Sweep and prune
         let collisions: Manifold[] = []
-        for (let i = 0; i < this.bodies.length; i++) for (let j = i + 1; j < this.bodies.length; j++)
+        for (let [a, b] of this.broadPhase())
         {
-            let a = this.bodies[i], b = this.bodies[j]
-            if (a.type === BodyType.Static && b.type === BodyType.Static) continue // Ignore if both bodies are static
-
             let collision = Collision.test(a, b)
-            if (collision) collisions.push(collision)
+            if (collision !== null) collisions.push(collision)
         }
 
         return collisions
+    }
+
+    private broadPhase(): [Body<Shape>, Body<Shape>][]
+    {
+        let pairs: [Body<Shape>, Body<Shape>][] = []
+
+        // Sort bodies based on AABB minimum x coordinate
+        let bounds = this.bodies.map(body => body.getBounds())
+        bounds.sort((a, b) => a.min.x - b.min.x)
+
+        for (let i = 0; i < bounds.length; i++)
+        {
+            let a = bounds[i]
+            for (let j = i + 1; j < bounds.length; j++)
+            {
+                let b = bounds[j]
+
+                if (b.min.x > a.max.x) break // No AABB further than this one will intersect either
+                if (b.min.y > a.max.y || b.max.y < a.min.y ||
+                    a.body.type === BodyType.Static && b.body.type === BodyType.Static) continue
+
+                pairs.push([a.body, b.body])
+            }
+        }
+
+        return pairs
     }
 
 }

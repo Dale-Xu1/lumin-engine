@@ -4,7 +4,8 @@ import type Body from "./Body"
 export class Bounds
 {
 
-    public constructor(public readonly min: Vector2, public readonly max: Vector2) { }
+    public constructor(public readonly body: Body<Shape>,
+        public readonly min: Vector2, public readonly max: Vector2) { }
 
 }
 
@@ -42,7 +43,7 @@ export class Circle extends Shape
     public override getBounds(body: Body<this>): Bounds
     {
         let r = new Vector2(this.radius, this.radius)
-        return new Bounds(body.position.sub(r), body.position.add(r))
+        return new Bounds(body, body.position.sub(r), body.position.add(r))
     }
 
     public override render(c: CanvasRenderingContext2D)
@@ -136,7 +137,7 @@ export class Polygon extends Shape
         let min = new Vector2(minX, minY)
         let max = new Vector2(maxX, maxY)
 
-        return new Bounds(body.position.add(min), body.position.add(max))
+        return new Bounds(body, body.position.add(min), body.position.add(max))
     }
 
     public override update(body: Body<this>)

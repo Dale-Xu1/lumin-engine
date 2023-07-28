@@ -14,7 +14,7 @@ onMount(() =>
     let width = window.innerWidth, height = window.innerHeight
     scene = new Scene(new Camera(canvas, width, height, Vector2.ZERO))
 
-    for (let i = 0; i < 20; i++)
+    for (let i = 0; i < 50; i++)
     {
         let shape = Math.random() < 0.5 ?
             new Circle(Math.random() * 0.4 + 0.2) :

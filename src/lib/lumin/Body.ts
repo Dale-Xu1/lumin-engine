@@ -1,4 +1,5 @@
 import Vector2 from "../math/Vector2"
+import type { Bounds } from "./Shape"
 import type Shape from "./Shape"
 
 export enum BodyType { Static, Dynamic }
@@ -121,6 +122,8 @@ export default class Body<T extends Shape>
         this.force = Vector2.ZERO
         this.torque = 0
     }
+
+    public getBounds(): Bounds { return this.shape.getBounds(this) }
 
     private lerp(a: number, b: number, t: number): number { return a + (b - a) * t }
     public render(c: CanvasRenderingContext2D, alpha: number)
