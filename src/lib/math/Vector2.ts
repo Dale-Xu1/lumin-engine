@@ -29,22 +29,25 @@ export default class Vector2
     public neg(): Vector2 { return new Vector2(-this.x, -this.y) }
 
     public dot(v: Vector2): number { return this.x * v.x + this.y * v.y }
+    public cross(v: Vector2): number { return this.x * v.y - this.y * v.x }
 
-    public cross(v: Vector2): number
-    public cross(v: number): Vector2
-    public cross(v: unknown)
-    {
-        if (v instanceof Vector2) return this.x * v.y - this.y * v.x
-        else if (typeof v === "number") return new Vector2(-this.y * v, this.x * v)
-    }
+    public get length(): number { return Math.sqrt(this.lengthSq) }
+    public get lengthSq(): number { return this.x * this.x + this.y * this.y }
 
-    public length(): number { return Math.sqrt(this.dot(this)) }
     public normalize(): Vector2
     {
-        let len = this.length()
+        let len = this.lengthSq
         if (len === 0) return this
 
-        return this.div(len)
+        return this.div(this.length)
+    }
+
+    public rotate(a: number): Vector2
+    {
+        return new Vector2(
+            this.x * Math.cos(a) - this.y * Math.sin(a),
+            this.x * Math.sin(a) + this.y * Math.cos(a)
+        )
     }
 
 }

@@ -1,6 +1,9 @@
 import Vector2 from "../math/Vector2"
 import type Body from "./Body"
-import type Shape from "./Shape"
+import { BodyType } from "./Body"
+import type { Manifold } from "./Collision"
+import Collision from "./Collision"
+import Shape from "./Shape"
 
 declare global
 {
@@ -10,6 +13,8 @@ declare global
     }
 }
 
+const MAX_DELAY = 200
+
 export default class LuminEngine
 {
 
@@ -18,7 +23,7 @@ export default class LuminEngine
     private readonly delta: number
     private readonly delay: number
 
-    public constructor(scene: Scene, delta: number = 0.05)
+    public constructor(scene: Scene, delta: number = 0.02)
     {
         this.scene = scene
 
@@ -53,6 +58,7 @@ export default class LuminEngine
         this.accumulated += now - this.previous
         this.previous = now
 
+        if (this.accumulated > MAX_DELAY) this.accumulated = MAX_DELAY // Prevent spiral of death
         while (this.accumulated > this.delay)
         {
             this.accumulated -= this.delay
@@ -66,31 +72,72 @@ export default class LuminEngine
 
 }
 
+export interface SceneParams
+{
+
+    gravity?: Vector2
+
+    iterations?: number
+    rate?: number
+
+}
+
 export class Scene
 {
 
     public readonly camera: Camera
     public readonly bodies: Body<Shape>[] = []
-    
+
     private readonly gravity: Vector2
 
-    public constructor(camera: Camera, gravity: Vector2 = Vector2.DOWN.mul(9.81))
+    private readonly iterations: number
+    private readonly rate: number
+
+    public constructor(camera: Camera,
+        { gravity = Vector2.DOWN.mul(9.81), iterations = 12, rate = 0.4 }: SceneParams = {})
     {
         this.camera = camera
         this.gravity = gravity
+
+        this.iterations = iterations
+        this.rate = rate
     }
 
 
+    private collisions: Manifold[] = []
     public update(delta: number)
     {
         for (let body of this.bodies) body.update(delta, this.gravity)
+
+        this.collisions = []
+        for (let i = 0; i < this.iterations; i++) this.resolve()
+    }
+
+    private resolve()
+    {
+        // Test for collisions
+        let collisions: Manifold[] = []
+        for (let i = 0; i < this.bodies.length; i++) for (let j = i + 1; j < this.bodies.length; j++)
+        {
+            let a = this.bodies[i], b = this.bodies[j]
+            if (a.type === BodyType.Static && b.type === BodyType.Static) continue // Ignore if both bodies are static
+
+            if (!Shape.testBounds(a, b)) continue
+            let collision = Collision.test(a, b)
+
+            if (collision) collisions.push(collision)
+        }
+
+        for (let collision of collisions) collision.resolve(this.rate)
+        this.collisions.push(...collisions)
     }
 
     public render(alpha: number)
     {
         this.camera.init()
-
         let c = this.camera.context
+
+        for (let collision of this.collisions) collision.render(c)
         for (let body of this.bodies) body.render(c, alpha)
     }
 

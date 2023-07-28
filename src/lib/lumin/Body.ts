@@ -1,13 +1,15 @@
 import Vector2 from "../math/Vector2"
 import type Shape from "./Shape"
 
+export enum BodyType { Static, Dynamic }
 export interface BodyParams
 {
 
-    angle?: number
-    dynamic?: boolean
+    type?: BodyType
 
     friction?: number
+    staticFriction?: number
+
     restitution?: number
 
 }
@@ -27,28 +29,40 @@ export default class Body<T extends Shape>
     public rotation: number = 0
     private torque: number = 0
 
-    private readonly dynamic: boolean
+    public readonly type: BodyType
     public readonly mass: number
     public readonly inertia: number
 
     public readonly friction: number
+    public readonly staticFriction: number
+
     public readonly restitution: number
 
-    public constructor(shape: T, position: Vector2,
-        { angle = 0, dynamic = true, friction = 0.8, restitution = 0.2 }: BodyParams = {})
+    public constructor(shape: T, position: Vector2, angle: number,
+        { type = BodyType.Dynamic, friction = 0.3, staticFriction = 0.5, restitution = 0.2 }: BodyParams = {})
     {
         this.shape = shape
 
         this.position = this.previousPosition = position
         this.angle = this.previousAngle = angle
 
-        this.dynamic = dynamic
-        let [mass, inertia] = shape.calculate()
+        this.type = type
+        if (type === BodyType.Dynamic)
+        {
+            let [mass, inertia] = shape.calculate()
 
-        this.mass = 1 / mass // Store inverse because multiplication is faster
-        this.inertia = 1 / inertia
+            this.mass = 1 / mass // Store inverse because multiplication is faster
+            this.inertia = 1 / inertia
+        }
+        else // Static bodies are given infinite mass
+        {
+            this.mass = 0
+            this.inertia = 0
+        }
 
         this.friction = friction
+        this.staticFriction = staticFriction
+
         this.restitution = restitution
     }
 
@@ -75,16 +89,16 @@ export default class Body<T extends Shape>
     {
         this.previousPosition = this.position
         this.previousAngle = this.angle
-        if (!this.dynamic) return
+        if (this.type === BodyType.Static) return
 
         // Calculate acceleration
-        let acceleration = this.force.mul(this.mass)
-        if (this.mass > 0) acceleration = acceleration.add(gravity)
+        let acceleration = this.force.mul(this.mass).add(gravity)
+
+        // TODO: Look into better integration methods
 
         // Integrate position
-        let previous = this.velocity
         this.velocity = this.velocity.add(acceleration.mul(delta))
-        this.position = this.position.add(this.velocity.add(previous).mul(delta / 2))
+        this.position = this.position.add(this.velocity.mul(delta))
 
         // Integrate angle
         this.rotation += this.torque * this.inertia * delta

@@ -1,11 +1,18 @@
 import Vector2 from "../math/Vector2"
+import type Body from "./Body"
 
 export default abstract class Shape
 {
 
-    protected readonly density: number
+    public static testBounds(a: Body<Shape>, b: Body<Shape>): boolean
+    {
+        let distSq = a.position.sub(b.position).lengthSq
+        let radius = a.shape.bound + b.shape.bound
 
-    protected constructor(density: number) { this.density = density }
+        return distSq <= radius * radius
+    }
+
+    protected constructor(protected readonly density: number, private readonly bound: number) { }
 
 
     public abstract calculate(): [number, number]
@@ -21,7 +28,7 @@ export class Circle extends Shape
 
     public constructor(radius: number, density: number = 1)
     {
-        super(density)
+        super(density, radius)
         this.radius = radius
     }
 
@@ -38,12 +45,19 @@ export class Circle extends Shape
 
     public override render(c: CanvasRenderingContext2D)
     {
-        c.strokeStyle = "black"
+        c.strokeStyle = "blue"
         c.strokeWidth = 1
 
+        // Line shows angle
+        c.beginPath()
+        c.moveTo(0, 0)
+        c.lineTo(this.radius, 0)
+        c.stroke()
+
+        // Draw circle
+        c.strokeStyle = "black"
         c.beginPath()
         c.arc(0, 0, this.radius, 0, Math.PI * 2)
-        c.lineTo(0, 0) // Line shows angle
         c.stroke()
     }
 
@@ -59,7 +73,13 @@ export class Polygon extends Shape
     private pair<T>(array: T[], i: number): [T, T] { return [array[i], array[(i + 1) % array.length]] }
     public constructor(vertices: Vector2[], density: number = 1)
     {
-        super(density)
+        let max = 0
+        for (let vertex of vertices)
+        {
+            let len = vertex.lengthSq
+            if (len > max) max = len
+        }
+        super(density, Math.sqrt(max))
 
         // Calculate normals
         this.vertices = vertices
