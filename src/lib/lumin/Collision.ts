@@ -3,7 +3,7 @@ import type Body from "./Body"
 import type Shape from "./Shape"
 import { Circle, Polygon } from "./Shape"
 
-const SLOP = 0.02
+const SLOP = 0.01
 
 export class Manifold
 {
@@ -111,16 +111,24 @@ export class Manifold
         c.fillStyle = "green"
         c.strokeWidth = 1
 
-        let penetration = this.penetration / this.contacts.length
+        // Render contact normal
+        let average = Vector2.ZERO
+        for (let contact of this.contacts) average = average.add(contact)
+
+        let penetration = Math.max(this.penetration, 0.1)
+
+        let u = this.b.position.add(average.div(this.contacts.length))
+        let v = u.add(this.normal.mul(penetration))
+
+        c.beginPath()
+        c.moveTo(u.x, u.y)
+        c.lineTo(v.x, v.y)
+        c.stroke()
+
+        // Render contacts
         for (let contact of this.contacts)
         {
             let u = this.b.position.add(contact)
-            let v = u.add(this.normal.mul(penetration))
-
-            c.beginPath()
-            c.moveTo(u.x, u.y)
-            c.lineTo(v.x, v.y)
-            c.stroke()
 
             c.beginPath()
             c.arc(u.x, u.y, 0.05, 0, Math.PI * 2)
@@ -175,8 +183,27 @@ namespace Collision
 
         let [i, penetration, [vertices, normals]] = u[1] < v[1] ? u : ([a, b] = [b, a], v)
 
+        // Index i refers to the reference face on polygon A
         let normal = normals[i]
-        let contacts = findSupports(a, b, vertices[i], normal)
+        let offset = a.position.sub(b.position)
+
+        let [r1, r2] = Vector2.pair(vertices, i).map(v => v.add(offset))
+        let [i1, i2] = findIncident(b, normal)
+
+        // Clip incident face onto reference face
+        let right = new Vector2(normal.y, -normal.x)
+        let left = right.neg();
+
+        [i1, i2] = clip(r2, left, i1, i2), [i2, i1] = clip(r1, right, i2, i1)
+        let contacts: Vector2[] = []
+
+        // Calculate penetration
+        let p1 = -i1.sub(r1).dot(normal)
+        let p2 = -i2.sub(r1).dot(normal)
+
+        if (p1 > 0) contacts.push(i1)
+        if (p2 > 0) contacts.push(i2)
+        if (contacts.length === 2) penetration = (p1 + p2) / 2
 
         return new Manifold(a, b, contacts, normal, penetration)
     }
@@ -190,7 +217,7 @@ namespace Collision
         let index: number, min = Infinity
         for (let i = 0; i < vertices.length; i++)
         {
-            let penetration = findVertex(a, b, vertices[i], normals[i])
+            let penetration = findSupport(a, b, vertices[i], normals[i])
             if (penetration === null) return null
 
             // Select axis with least penetration
@@ -204,7 +231,7 @@ namespace Collision
         return [index!, min, [vertices, normals]]
     }
 
-    function findVertex(a: Body<Polygon>, b: Body<Polygon>, face: Vector2, normal: Vector2): number | null
+    function findSupport(a: Body<Polygon>, b: Body<Polygon>, face: Vector2, normal: Vector2): number | null
     {
         let vertices = b.shape.vertices.map(vertex => vertex.rotate(b.angle))
         let offset = b.position.sub(a.position)
@@ -223,22 +250,34 @@ namespace Collision
         return max
     }
 
-    function findSupports(a: Body<Polygon>, b: Body<Polygon>, face: Vector2, normal: Vector2): Vector2[]
+    function findIncident(b: Body<Polygon>, normal: Vector2): [Vector2, Vector2]
     {
-        let vertices = b.shape.vertices.map(vertex => vertex.rotate(b.angle))
-        let offset = b.position.sub(a.position)
+        let normals = b.shape.normals.map(normal => normal.rotate(b.angle))
 
-        let contacts: Vector2[] = []
-        for (let vertex of vertices)
+        // Find normal on B that is most in the opposite direction as the normal of the reference face
+        let index: number, min = Infinity
+        for (let i = 0; i < normals.length; i++)
         {
-            // Track distance of point furthest behind face
-            let relative = vertex.add(offset).sub(face)
-            let projected = relative.dot(normal)
-
-            if (projected < 0) contacts.push(vertex)
+            let compare = normal.dot(normals[i])
+            if (compare < min)
+            {
+                min = compare
+                index = i
+            }
         }
 
-        return contacts
+        return Vector2.pair(b.shape.vertices, index!).map(v => v.rotate(b.angle)) as [Vector2, Vector2]
+    }
+
+    function clip(vertex: Vector2, direction: Vector2, i1: Vector2, i2: Vector2): [Vector2, Vector2]
+    {
+        let d1 = i1.sub(vertex).dot(direction)
+        let d2 = i2.sub(vertex).dot(direction)
+
+        if (d1 * d2 > 0) return [i1, i2]
+        let alpha = d1 / (d1 - d2)
+
+        return [Vector2.lerp(i1, i2, alpha), i2]
     }
 
 
@@ -257,8 +296,7 @@ namespace Collision
         let radius = b.shape.radius
         let center = b.position.sub(a.position)
 
-        let left = center.sub(vertices[(i + 1) % vertices.length])
-        let right = center.sub(vertices[i])
+        let [right, left] = Vector2.pair(vertices, i).map(v => center.sub(v))
 
         // Test if circle is in corner regions
         let normal = normals[i]

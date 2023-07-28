@@ -14,7 +14,7 @@ onMount(() =>
     let width = window.innerWidth, height = window.innerHeight
     scene = new Scene(new Camera(canvas, width, height, Vector2.ZERO))
 
-    for (let i = 0; i < 30; i++)
+    for (let i = 0; i < 20; i++)
     {
         let shape = Math.random() < 0.5 ?
             new Circle(Math.random() * 0.4 + 0.2) :
@@ -24,6 +24,8 @@ onMount(() =>
 
     scene.bodies.push(new Body(new Circle(0.5), new Vector2(2, 5), 0))
     scene.bodies.push(new Body(new Rectangle(1, 1), new Vector2(0, 0), 0))
+
+    scene.bodies.push(new Body(new Rectangle(1, 0.5), new Vector2(0.7, 5), 0))
 
     scene.bodies.push(new Body(new Rectangle(16, 1), new Vector2(0, -8), 0, { type: BodyType.Static }))
     scene.bodies.push(new Body(new Rectangle(1, 16), new Vector2(-8, 0), 0, { type: BodyType.Static }))

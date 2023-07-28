@@ -70,7 +70,6 @@ export class Polygon extends Shape
     public readonly normals: Vector2[] = []
 
 
-    private pair<T>(array: T[], i: number): [T, T] { return [array[i], array[(i + 1) % array.length]] }
     public constructor(vertices: Vector2[], density: number = 1)
     {
         let max = 0
@@ -85,7 +84,7 @@ export class Polygon extends Shape
         this.vertices = vertices
         for (let i = 0; i < vertices.length; i++)
         {
-            let [a, b] = this.pair(vertices, i)
+            let [a, b] = Vector2.pair(vertices, i)
 
             // Get perpendicular vector
             let direction = b.sub(a)
@@ -101,7 +100,7 @@ export class Polygon extends Shape
 
         for (let i = 0; i < this.vertices.length; i++)
         {
-            let [a, b] = this.pair(this.vertices, i)
+            let [a, b] = Vector2.pair(this.vertices, i)
 
             // Split polygon into triangles made of origin and two vertices
             let cross = Math.abs(a.cross(b))
@@ -126,7 +125,7 @@ export class Polygon extends Shape
 
         for (let i = 0; i < this.vertices.length; i++)
         {
-            let [a, b] = this.pair(this.vertices, i)
+            let [a, b] = Vector2.pair(this.vertices, i)
 
             let u = a.add(b).div(2)
             let v = u.add(this.normals[i].mul(0.1))

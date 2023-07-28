@@ -9,6 +9,10 @@ export default class Vector2
     public static readonly RIGHT: Vector2 = new Vector2(1, 0)
 
     public static lerp(a: Vector2, b: Vector2, t: number): Vector2 { return a.add(b.sub(a).mul(t)) }
+    public static pair(array: Vector2[], i: number): [Vector2, Vector2]
+    {
+        return [array[i], array[(i + 1) % array.length]]
+    }
 
 
     public readonly x: number
