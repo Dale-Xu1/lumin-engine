@@ -1,8 +1,7 @@
 import Vector2 from "../math/Vector2"
 import type Body from "./Body"
-import { BodyType } from "./Body"
-import type { Manifold } from "./Collision"
-import Collision from "./Collision"
+import { Detector } from "./Collision"
+import type Manifold from "./Manifold"
 import type Shape from "./Shape"
 
 declare global
@@ -134,51 +133,6 @@ export class Scene
 
         for (let collision of this.collisions) collision.render(c)
         for (let body of this.bodies) body.render(c, alpha)
-    }
-
-}
-
-class Detector
-{
-
-    public constructor(private readonly bodies: Body<Shape>[]) { }
-
-    public detect(): Manifold[]
-    {
-        let collisions: Manifold[] = []
-        for (let [a, b] of this.broadPhase())
-        {
-            let collision = Collision.test(a, b)
-            if (collision !== null) collisions.push(collision)
-        }
-
-        return collisions
-    }
-
-    private broadPhase(): [Body<Shape>, Body<Shape>][]
-    {
-        let pairs: [Body<Shape>, Body<Shape>][] = []
-
-        // Sort bodies based on AABB minimum x coordinate
-        let bounds = this.bodies.map(body => body.getBounds())
-        bounds.sort((a, b) => a.min.x - b.min.x)
-
-        for (let i = 0; i < bounds.length; i++)
-        {
-            let a = bounds[i]
-            for (let j = i + 1; j < bounds.length; j++)
-            {
-                let b = bounds[j]
-
-                if (b.min.x > a.max.x) break // No AABB further than this one will intersect either
-                if (b.min.y > a.max.y || b.max.y < a.min.y ||
-                    a.body.type === BodyType.Static && b.body.type === BodyType.Static) continue
-
-                pairs.push([a.body, b.body])
-            }
-        }
-
-        return pairs
     }
 
 }

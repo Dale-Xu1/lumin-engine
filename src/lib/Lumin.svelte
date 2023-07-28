@@ -14,18 +14,26 @@ onMount(() =>
     let width = window.innerWidth, height = window.innerHeight
     scene = new Scene(new Camera(canvas, width, height, Vector2.ZERO))
 
-    for (let i = 0; i < 50; i++)
+    setInterval(() =>
     {
         let shape = Math.random() < 0.5 ?
             new Circle(Math.random() * 0.4 + 0.2) :
             new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
-        scene.bodies.push(new Body(shape, new Vector2(Math.random() * 2 - 1, 0), Math.random() * 2 * Math.PI))
-    }
+        scene.bodies.push(new Body(shape, new Vector2(Math.random() * 2 - 1, 5), Math.random() * 2 * Math.PI))
+    }, 1000)
 
-    scene.bodies.push(new Body(new Circle(0.5), new Vector2(2, 5), 0))
-    scene.bodies.push(new Body(new Rectangle(1, 1), new Vector2(0, 0), 0))
+    // for (let i = 0; i < 50; i++)
+    // {
+    //     let shape = Math.random() < 0.5 ?
+    //         new Circle(Math.random() * 0.4 + 0.2) :
+    //         new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
+    //     scene.bodies.push(new Body(shape, new Vector2(Math.random() * 2 - 1, 0), Math.random() * 2 * Math.PI))
+    // }
 
-    scene.bodies.push(new Body(new Rectangle(1, 0.5), new Vector2(0.7, 5), 0))
+    // scene.bodies.push(new Body(new Circle(0.5), new Vector2(2, 5), 0))
+    // scene.bodies.push(new Body(new Rectangle(1, 1), new Vector2(0, 0), 0))
+
+    // scene.bodies.push(new Body(new Rectangle(1, 0.5), new Vector2(0.7, 5), 0))
 
     scene.bodies.push(new Body(new Rectangle(16, 1), new Vector2(0, -8), 0, { type: BodyType.Static }))
     scene.bodies.push(new Body(new Rectangle(1, 16), new Vector2(-8, 0), 0, { type: BodyType.Static }))
@@ -43,7 +51,7 @@ onMount(() =>
 
         public constructor()
         {
-            super(new Rectangle(2, 1), new Vector2(0, 0), 0)
+            super(new Rectangle(0.5, 0.5, 20), new Vector2(0, 0), 0)
             let event = (value: boolean) => (e: KeyboardEvent) =>
             {
                 switch (e.code)
@@ -65,7 +73,7 @@ onMount(() =>
 
         public override update(delta: number, gravity: Vector2)
         {
-            let speed = 20
+            let speed = 30
 
             let offset = Vector2.ZERO
             let angle = 0
