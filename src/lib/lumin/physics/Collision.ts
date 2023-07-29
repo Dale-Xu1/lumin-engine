@@ -1,4 +1,4 @@
-import Vector2 from "../math/Vector2"
+import Vector2 from "../../math/Vector2"
 import type Body from "./Body"
 import { BodyType } from "./Body"
 import Manifold from "./Manifold"

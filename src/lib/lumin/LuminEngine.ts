@@ -1,9 +1,10 @@
 import Vector2 from "../math/Vector2"
-import type Body from "./Body"
-import Collision, { Detector, RayIntersection } from "./Collision"
-import type Manifold from "./Manifold"
-import type { Ray } from "./Shape"
-import type Shape from "./Shape"
+import type Body from "./physics/Body"
+import Collision, { Detector, RayIntersection } from "./physics/Collision"
+import type Manifold from "./physics/Manifold"
+import type PhysicsEngine from "./physics/PhysicsEngine"
+import type { Ray } from "./physics/Shape"
+import type Shape from "./physics/Shape"
 
 declare global
 {
@@ -72,40 +73,10 @@ export default class LuminEngine
 
 }
 
-export interface SceneParams
-{
-
-    gravity?: Vector2
-
-    iterations?: number
-    correctionRate?: number
-
-}
-
 export class Scene
 {
 
-    public readonly camera: Camera
-    public readonly bodies: Body<Shape>[] = []
-
-    private readonly gravity: Vector2
-
-    private readonly iterations: number
-    private readonly rate: number
-
-    public constructor(camera: Camera,
-    {
-        gravity = Vector2.DOWN.mul(9.81),
-        iterations = 12,
-        correctionRate = 0.4
-    }: SceneParams = {})
-    {
-        this.camera = camera
-        this.gravity = gravity
-
-        this.iterations = iterations
-        this.rate = correctionRate
-    }
+    public constructor(public readonly camera: Camera, public readonly physics: PhysicsEngine) { }
 
 
     public toWorldSpace(screen: Vector2): Vector2
@@ -126,62 +97,13 @@ export class Scene
         return new Vector2(screen.x, -screen.y).mul(camera.height / camera.size).add(dimensions)
     }
 
-
-    public testPoint(point: Vector2): Body<Shape>[]
-    {
-        let bodies: Body<Shape>[] = []
-        for (let body of this.bodies)
-        {
-            let bounds = body.getBounds()
-            if (point.x > bounds.min.x && point.x < bounds.max.x &&
-                point.y > bounds.min.y && point.y < bounds.max.y &&
-                Collision.testPoint(body, point)) bodies.push(body)
-        }
-
-        return bodies
-    }
-
-    public testRay(ray: Ray): RayIntersection | null
-    {
-        let min: RayIntersection | null = null
-        for (let body of this.bodies)
-        {
-            let bounds = body.getBounds()
-            if (Collision.rayBounds(bounds, ray))
-            {
-                let intersection = Collision.testRay(body, ray)
-                if (intersection !== null && (min === null || intersection.distance < min.distance)) min = intersection
-            }
-        }
-
-        return min
-    }
-
-
-    private collisions: Manifold[] = []
     public update(delta: number)
     {
-        for (let body of this.bodies) body.update(delta, this.gravity)
-
-        // TODO: Mouse interaction
-        // TODO: Constraints
-        // TODO: Collision layers
-
-        // TODO: Refactor physics engine into more general game engine/entity-component system
+        // TODO: Game engine/entity-component system
+        // TODO: Scene stack
         // TODO: Particle system
 
-        this.collisions = []
-        for (let i = 0; i < this.iterations; i++) this.resolve()
-    }
-
-    private resolve()
-    {
-        let detector = new Detector(this.bodies)
-
-        let collisions = detector.detect()
-        for (let collision of collisions) collision.resolve(this.rate)
-
-        this.collisions.push(...collisions)
+        this.physics.update(delta)
     }
 
     public render(alpha: number)
@@ -189,13 +111,12 @@ export class Scene
         this.camera.init()
         let c = this.camera.context
 
-        for (let collision of this.collisions) collision.render(c)
-        for (let body of this.bodies) body.render(c, alpha)
+        this.physics.render(c, alpha)
     }
 
 }
 
-export class Camera
+export class Camera // TODO: Make camera an entity (with position interpolation)
 {
 
     public readonly canvas: HTMLCanvasElement

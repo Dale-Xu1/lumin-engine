@@ -3,8 +3,9 @@ import { onMount } from "svelte"
 
 import LuminEngine, { Camera, Scene } from "./lumin/LuminEngine"
 import Vector2 from "./math/Vector2"
-import Body, { BodyType } from "./lumin/Body"
-import { Circle, Ray, Rectangle } from "./lumin/Shape"
+import Body, { BodyType } from "./lumin/physics/Body"
+import { Circle, Rectangle } from "./lumin/physics/Shape"
+import PhysicsEngine from "./lumin/physics/PhysicsEngine"
 
 let canvas: HTMLCanvasElement
 let scene: Scene
@@ -12,17 +13,20 @@ let scene: Scene
 onMount(() =>
 {
     let width = window.innerWidth, height = window.innerHeight
-    scene = new Scene(new Camera(canvas, width, height, Vector2.ZERO))
+
+    let camera = new Camera(canvas, width, height, Vector2.ZERO)
+    let physics = new PhysicsEngine()
+    scene = new Scene(camera, physics)
 
     window.addEventListener("mousedown", e =>
     {
         let position = scene.toWorldSpace(new Vector2(e.clientX, e.clientY))
-        if (scene.testPoint(position).length > 0) return
+        if (scene.physics.testPoint(position).length > 0) return
 
         let shape = Math.random() < 0.5 ?
             new Circle(Math.random() * 0.4 + 0.2) :
             new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
-        scene.bodies.push(new Body(shape, position, Math.random() * 2 * Math.PI))
+        scene.physics.bodies.push(new Body(shape, position, Math.random() * 2 * Math.PI))
     })
 
     for (let i = 0; i < 30; i++)
@@ -30,13 +34,13 @@ onMount(() =>
         let shape = Math.random() < 0.5 ?
             new Circle(Math.random() * 0.4 + 0.2) :
             new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
-        scene.bodies.push(new Body(shape, new Vector2(Math.random() * 2 - 1, 0), Math.random() * 2 * Math.PI))
+        scene.physics.bodies.push(new Body(shape, new Vector2(Math.random() * 2 - 1, 0), Math.random() * 2 * Math.PI))
     }
 
-    scene.bodies.push(new Body(new Rectangle(24, 1), new Vector2(0, -8), 0, { type: BodyType.Static }))
-    scene.bodies.push(new Body(new Rectangle(1, 16), new Vector2(-12, 0), 0, { type: BodyType.Static }))
-    scene.bodies.push(new Body(new Rectangle(1, 16), new Vector2(12, 0), 0, { type: BodyType.Static }))
-    scene.bodies.push(new class extends Body<Rectangle>
+    scene.physics.bodies.push(new Body(new Rectangle(24, 1), new Vector2(0, -8), 0, { type: BodyType.Static }))
+    scene.physics.bodies.push(new Body(new Rectangle(1, 16), new Vector2(-12, 0), 0, { type: BodyType.Static }))
+    scene.physics.bodies.push(new Body(new Rectangle(1, 16), new Vector2(12, 0), 0, { type: BodyType.Static }))
+    scene.physics.bodies.push(new class extends Body<Rectangle>
     {
 
         private up: boolean = false
@@ -88,26 +92,6 @@ onMount(() =>
             this.applyTorque(angle * speed)
 
             super.update(delta, gravity)
-        }
-
-        public override render(c: CanvasRenderingContext2D, alpha: number): void
-        {
-            super.render(c, alpha)
-
-            let dir = Vector2.DOWN.rotate(this.angle)
-            let ray = new Ray(this.position.add(dir.mul(0.5)), dir)
-            let intersection = scene.testRay(ray)
-
-            if (intersection !== null)
-            {
-                c.strokeWidth = 1
-                c.strokeStyle = "red"
-
-                c.beginPath()
-                c.moveTo(ray.position.x, ray.position.y)
-                c.lineTo(intersection.position.x, intersection.position.y)
-                c.stroke()
-            }
         }
 
     }())

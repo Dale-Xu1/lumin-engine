@@ -1,4 +1,4 @@
-import Vector2 from "../math/Vector2"
+import Vector2 from "../../math/Vector2"
 import type { Bounds } from "./Shape"
 import type Shape from "./Shape"
 
