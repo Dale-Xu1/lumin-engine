@@ -107,10 +107,34 @@ export class Scene
     }
 
 
+    public toWorldSpace(screen: Vector2): Vector2
+    {
+        let camera = this.camera
+        let dimensions = new Vector2(camera.width / 2, camera.height / 2)
+
+        let world = screen.sub(dimensions).div(camera.height / camera.size)
+        return new Vector2(world.x, -world.y).sub(camera.position)
+    }
+
+    public toScreenSpace(world: Vector2): Vector2
+    {
+        let camera = this.camera
+        let dimensions = new Vector2(camera.width / 2, camera.height / 2)
+
+        let screen = world.add(camera.position)
+        return new Vector2(screen.x, -screen.y).mul(camera.height / camera.size).add(dimensions)
+    }
+
+
     private collisions: Manifold[] = []
     public update(delta: number)
     {
         for (let body of this.bodies) body.update(delta, this.gravity)
+
+        // TODO: Mouse interaction
+        // TODO: Constraints
+        // TODO: Test for concave polygons
+        // TODO: Ray and point intersections (no manifolds)
 
         this.collisions = []
         for (let i = 0; i < this.iterations; i++) this.resolve()
