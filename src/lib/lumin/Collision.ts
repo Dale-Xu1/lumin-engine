@@ -3,7 +3,7 @@ import type Body from "./Body"
 import { BodyType } from "./Body"
 import Manifold from "./Manifold"
 import type Shape from "./Shape"
-import { Circle, Polygon, Ray } from "./Shape"
+import { Bounds, Circle, Polygon, Ray } from "./Shape"
 
 export class Detector
 {
@@ -133,7 +133,7 @@ namespace Collision
         let vertices = a.shape.transform.vertices
         let normals = a.shape.transform.normals
 
-        let index: number, min = Infinity
+        let index!: number, min = Infinity
         for (let i = 0; i < vertices.length; i++)
         {
             let penetration = findSupport(a, b, vertices[i], normals[i])
@@ -147,7 +147,7 @@ namespace Collision
             }
         }
 
-        return [index!, min]
+        return [index, min]
     }
 
     function findSupport(a: Body<Polygon>, b: Body<Polygon>, face: Vector2, normal: Vector2): number | null
@@ -173,7 +173,7 @@ namespace Collision
     {
         // Find normal on B that is most in the opposite direction as the normal of the reference face
         let normals = b.shape.transform.normals
-        let index: number, min = Infinity
+        let index!: number, min = Infinity
 
         for (let i = 0; i < normals.length; i++)
         {
@@ -185,7 +185,7 @@ namespace Collision
             }
         }
 
-        return Vector2.pair(b.shape.transform.vertices, index!)
+        return Vector2.pair(b.shape.transform.vertices, index)
     }
 
     function clip(vertex: Vector2, direction: Vector2, i1: Vector2, i2: Vector2): [Vector2, Vector2]
@@ -231,7 +231,7 @@ namespace Collision
         let radius = b.shape.radius
         let center = b.position.sub(a.position)
 
-        let index: number, min = Infinity
+        let index!: number, min = Infinity
         for (let i = 0; i < vertices.length; i++)
         {
             let vertex = vertices[i]
@@ -249,7 +249,7 @@ namespace Collision
             }
         }
 
-        return [index!, min]
+        return [index, min]
     }
 
     function corner(a: Body<Polygon>, b: Body<Circle>, vertex: Vector2): Manifold | null
@@ -309,14 +309,70 @@ namespace Collision
         return null
     }
 
+    export function rayBounds(bounds: Bounds, ray: Ray): boolean
+    {
+        let t1 = (bounds.min.x - ray.position.x) / ray.direction.x
+        let t2 = (bounds.max.x - ray.position.x) / ray.direction.x
+        let t3 = (bounds.min.y - ray.position.y) / ray.direction.y
+        let t4 = (bounds.max.y - ray.position.y) / ray.direction.y
+
+        let min = Math.max(Math.min(t1, t2), Math.min(t3, t4))
+        let max = Math.min(Math.max(t1, t2), Math.max(t3, t4))
+
+        if (max < 0) return false
+        if (min > max) return false
+
+        return true
+    }
+
     export function rayCircle(circle: Body<Circle>, ray: Ray): RayIntersection | null
     {
-        return null
+        let d = ray.position.sub(circle.position)
+        let p1 = -ray.direction.dot(d)
+
+        let radius = circle.shape.radius
+        let l = p1 * p1 - d.lengthSq + radius * radius
+        if (l < 0) return null
+
+        let p2 = Math.sqrt(l)
+        let t = p1 - p2 > 0 ? p1 - p2 : p1 + p2
+        if (t < 0) return null
+
+        let position = ray.position.add(ray.direction.mul(t))
+        let normal = position.sub(circle.position).normalize()
+
+        return new RayIntersection(circle, position, normal, t)
     }
 
     export function rayPolygon(polygon: Body<Polygon>, ray: Ray): RayIntersection | null
     {
-        return null
+        let vertices = polygon.shape.transform.vertices.map(vertex => vertex.add(polygon.position))
+        let normals = polygon.shape.transform.normals
+
+        // Perform ray-line segment tests for each edge in polygon
+        let index!: number, min = Infinity
+        for (let i = 0; i < vertices.length; i++)
+        {
+            let [a, b] = Vector2.pair(vertices, i)
+
+            let v1 = ray.position.sub(a)
+            let v2 = b.sub(a)
+
+            let c = ray.direction.cross(v2)
+            if (c > 0) continue // Backface culling
+
+            let t1 = v2.cross(v1) / c
+            let t2 = ray.direction.cross(v1) / c
+
+            if (t1 > 0 && t2 > 0 && t2 < 1 && t1 < min)
+            {
+                index = i
+                min = t1
+            }
+        }
+
+        let position = ray.position.add(ray.direction.mul(min))
+        return new RayIntersection(polygon, position, normals[index], min)
     }
 
 }

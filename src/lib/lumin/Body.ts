@@ -13,6 +13,8 @@ export interface BodyParams
 
     restitution?: number
 
+    gravityScale?: number
+
 }
 
 interface Constructor<T> { new(...args: any[]): T }
@@ -38,14 +40,15 @@ export default class Body<T extends Shape>
     public readonly staticFriction: number
 
     public readonly restitution: number
+    public gravityScale: number
 
 
     public constructor(shape: T, position: Vector2, angle: number,
     {
         type = BodyType.Dynamic,
-        friction = 0.3,
-        staticFriction = 0.5,
-        restitution = 0.2
+        friction = 0.3, staticFriction = 0.5,
+        restitution = 0.2,
+        gravityScale = 1
     }: BodyParams = {})
     {
         this.shape = shape
@@ -71,6 +74,7 @@ export default class Body<T extends Shape>
         this.staticFriction = staticFriction
 
         this.restitution = restitution
+        this.gravityScale = gravityScale
 
         this.shape.update(this)
     }
@@ -106,7 +110,7 @@ export default class Body<T extends Shape>
     private integrate(delta: number, gravity: Vector2)
     {
         // Calculate acceleration
-        let acceleration = this.force.mul(this.mass).add(gravity)
+        let acceleration = this.force.mul(this.mass).add(gravity.mul(this.gravityScale))
 
         // TODO: Look into better integration methods
 

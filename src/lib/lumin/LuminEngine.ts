@@ -1,6 +1,6 @@
 import Vector2 from "../math/Vector2"
 import type Body from "./Body"
-import Collision, { Detector } from "./Collision"
+import Collision, { Detector, RayIntersection } from "./Collision"
 import type Manifold from "./Manifold"
 import type { Ray } from "./Shape"
 import type Shape from "./Shape"
@@ -141,9 +141,20 @@ export class Scene
         return bodies
     }
 
-    public testRay(ray: Ray)
+    public testRay(ray: Ray): RayIntersection | null
     {
-        // TODO: Raycasting
+        let min: RayIntersection | null = null
+        for (let body of this.bodies)
+        {
+            let bounds = body.getBounds()
+            if (Collision.rayBounds(bounds, ray))
+            {
+                let intersection = Collision.testRay(body, ray)
+                if (intersection !== null && (min === null || intersection.distance < min.distance)) min = intersection
+            }
+        }
+
+        return min
     }
 
 
@@ -154,7 +165,6 @@ export class Scene
 
         // TODO: Mouse interaction
         // TODO: Constraints
-        // TODO: Gravity scale
         // TODO: Collision layers
 
         // TODO: Refactor physics engine into more general game engine/entity-component system
