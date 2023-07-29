@@ -3,7 +3,7 @@ import type Body from "./Body"
 import { BodyType } from "./Body"
 import Manifold from "./Manifold"
 import type Shape from "./Shape"
-import { Circle, Polygon } from "./Shape"
+import { Circle, Polygon, Ray } from "./Shape"
 
 export class Detector
 {
@@ -47,6 +47,15 @@ export class Detector
 
         return pairs
     }
+
+}
+
+export class RayIntersection
+{
+
+    public constructor(public readonly body: Body<Shape>,
+        public readonly position: Vector2, public readonly normal: Vector2,
+        public readonly distance: number) { }
 
 }
 
@@ -256,6 +265,58 @@ namespace Collision
 
         let contact = normal.mul(-radius)
         return new Manifold(a, b, [contact], normal, penetration)
+    }
+
+
+    export function testPoint(body: Body<Shape>, point: Vector2): boolean
+    {
+        if (body.is(Circle)) return pointCircle(body, point)
+        if (body.is(Polygon)) return pointPolygon(body, point)
+
+        return false
+    }
+
+    export function pointCircle(circle: Body<Circle>, point: Vector2): boolean
+    {
+        let distSq = point.sub(circle.position).lengthSq
+        let radius = circle.shape.radius
+
+        return distSq < radius * radius
+    }
+
+    export function pointPolygon(polygon: Body<Polygon>, point: Vector2): boolean
+    {
+        let vertices = polygon.shape.transform.vertices
+        let normals = polygon.shape.transform.normals
+
+        // Test if point is behind all faces of polygon
+        let relative = point.sub(polygon.position)
+        for (let i = 0; i < vertices.length; i++)
+        {
+            let projected = relative.sub(vertices[i]).dot(normals[i])
+            if (projected >= 0) return false
+        }
+
+        return true
+    }
+
+
+    export function testRay(body: Body<Shape>, ray: Ray): RayIntersection | null
+    {
+        if (body.is(Circle)) return rayCircle(body, ray)
+        if (body.is(Polygon)) return rayPolygon(body, ray)
+
+        return null
+    }
+
+    export function rayCircle(circle: Body<Circle>, ray: Ray): RayIntersection | null
+    {
+        return null
+    }
+
+    export function rayPolygon(polygon: Body<Polygon>, ray: Ray): RayIntersection | null
+    {
+        return null
     }
 
 }

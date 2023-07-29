@@ -1,14 +1,6 @@
 import Vector2 from "../math/Vector2"
 import type Body from "./Body"
 
-export class Bounds
-{
-
-    public constructor(public readonly body: Body<Shape>,
-        public readonly min: Vector2, public readonly max: Vector2) { }
-
-}
-
 export default abstract class Shape
 {
 
@@ -21,6 +13,14 @@ export default abstract class Shape
 
     public update(body: Body<this>) { }
     public abstract render(c: CanvasRenderingContext2D): void
+
+}
+
+export class Bounds
+{
+
+    public constructor(public readonly body: Body<Shape>,
+        public readonly min: Vector2, public readonly max: Vector2) { }
 
 }
 
@@ -81,6 +81,7 @@ export class Polygon extends Shape
 
     public constructor(public readonly vertices: Vector2[], density: number = 1)
     {
+        // TODO: Test for concave polygons
         super(density)
 
         // Calculate normals
@@ -200,5 +201,12 @@ export class Rectangle extends Polygon
 
         return [mass, inertia]
     }
+
+}
+
+export class Ray
+{
+
+    public constructor(public readonly position: Vector2, public readonly direction: Vector2) { }
 
 }

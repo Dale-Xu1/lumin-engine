@@ -23,7 +23,7 @@ onMount(() =>
 
         scene.bodies.push(new Body(shape, position, Math.random() * 2 * Math.PI))
     })
-    
+
     for (let i = 0; i < 30; i++)
     {
         let shape = Math.random() < 0.5 ?

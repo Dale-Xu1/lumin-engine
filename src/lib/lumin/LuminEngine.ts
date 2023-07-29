@@ -1,7 +1,8 @@
 import Vector2 from "../math/Vector2"
 import type Body from "./Body"
-import { Detector } from "./Collision"
+import Collision, { Detector } from "./Collision"
 import type Manifold from "./Manifold"
+import type { Ray } from "./Shape"
 import type Shape from "./Shape"
 
 declare global
@@ -126,6 +127,26 @@ export class Scene
     }
 
 
+    public testPoint(point: Vector2): Body<Shape>[]
+    {
+        let bodies: Body<Shape>[] = []
+        for (let body of this.bodies)
+        {
+            let bounds = body.getBounds()
+            if (point.x > bounds.min.x && point.x < bounds.max.x &&
+                point.y > bounds.min.y && point.y < bounds.max.y &&
+                Collision.testPoint(body, point)) bodies.push(body)
+        }
+
+        return bodies
+    }
+
+    public testRay(ray: Ray)
+    {
+        // TODO: Raycasting
+    }
+
+
     private collisions: Manifold[] = []
     public update(delta: number)
     {
@@ -133,8 +154,11 @@ export class Scene
 
         // TODO: Mouse interaction
         // TODO: Constraints
-        // TODO: Test for concave polygons
-        // TODO: Ray and point intersections (no manifolds)
+        // TODO: Gravity scale
+        // TODO: Collision layers
+
+        // TODO: Refactor physics engine into more general game engine/entity-component system
+        // TODO: Particle system
 
         this.collisions = []
         for (let i = 0; i < this.iterations; i++) this.resolve()
