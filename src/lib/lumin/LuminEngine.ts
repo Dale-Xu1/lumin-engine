@@ -9,19 +9,21 @@ declare global
     }
 }
 
+const DEBUG = true
 const MAX_DELAY = 200
 
 export default class LuminEngine
 {
 
-    private readonly scene: Scene
+    private readonly stack: Scene[] = []
+    private get scene(): Scene { return this.stack[this.stack.length - 1] }
 
     private readonly delta: number
     private readonly delay: number
 
     public constructor(scene: Scene, delta: number = 0.02)
     {
-        this.scene = scene
+        this.enter(scene)
 
         this.delta = delta
         this.delay = delta * 1000 // Convert to milliseconds
@@ -29,6 +31,9 @@ export default class LuminEngine
         this.frame = this.frame.bind(this)
     }
 
+
+    public enter(scene: Scene) { this.stack.push(scene) }
+    public exit(): Scene { return this.stack.pop()! }
 
     private previous!: number
     private accumulated: number = 0
@@ -58,12 +63,12 @@ export default class LuminEngine
         while (this.accumulated > this.delay)
         {
             this.accumulated -= this.delay
-            this.scene.update(this.delta)
+            if (this.scene !== null) this.scene.update(this.delta)
         }
 
         // Calculate alpha for interpolation
         let alpha = this.accumulated / this.delay
-        this.scene.render(alpha)
+        if (this.scene !== null) this.scene.render(alpha)
     }
 
 }
@@ -113,7 +118,6 @@ export class Scene
 
     public update(delta: number)
     {
-        // TODO: Scene stack
         // TODO: Scene description file
         // TODO: Particle system
 
@@ -127,8 +131,9 @@ export class Scene
         this.camera.transform()
 
         let c = this.camera.context
-        this.physics.debug(c)
         for (let entity of this.entities) entity.render(c, alpha)
+
+        if (DEBUG) this.physics.debug(c)
     }
 
 }

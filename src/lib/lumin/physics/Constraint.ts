@@ -52,25 +52,19 @@ export default class Constraint extends Component
         let rv = this.a.velocity.sub(this.b.velocity)
         let difference = delta.length - this.length
 
-        // Apply restorative force as impulse
-        let force = normal.mul(this.stiffness * difference)
-        this.correctPositions(force)
+        this.correctPositions(normal.mul(this.stiffness * this.damping * difference))
 
-        force = force.div(iterations)
+        // Apply restorative force as impulse
+        let force = normal.mul(this.stiffness * difference + this.damping * normal.dot(rv)).div(iterations)
         this.a.applyImpulse(force.neg(), pointA)
         this.b.applyImpulse(force, pointB)
-
-        // Reduce velocity along normal of the constraint
-        let velocity = normal.mul(this.damping * normal.dot(rv) / iterations)
-        this.a.applyImpulse(velocity.neg(), pointA)
-        this.b.applyImpulse(velocity, pointB)
     }
 
-    private correctPositions(force: Vector2)
+    private correctPositions(normal: Vector2)
     {
         let total = this.a.mass + this.b.mass
-        this.a.position = this.a.position.sub(force.mul(this.damping * this.a.mass / total))
-        this.b.position = this.b.position.add(force.mul(this.damping * this.b.mass / total))
+        this.a.position = this.a.position.sub(normal.mul(this.a.mass / total))
+        this.b.position = this.b.position.add(normal.mul(this.b.mass / total))
     }
 
     public debug(c: CanvasRenderingContext2D)

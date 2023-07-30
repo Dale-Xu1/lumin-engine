@@ -118,14 +118,15 @@ onMount(() =>
         chain.push(body)
     }
 
-    scene.addEntity(new Entity(new Vector2(4, y), 0, [start, new Constraint(0.25, start, chain[0], { pointA: Vector2.ZERO, pointB: Vector2.UP.mul(0.15), damping: 0.02 })]))
+    scene.addEntity(new Entity(new Vector2(4, y), 0, [start, new Constraint(0.5, start, chain[0], { pointA: Vector2.ZERO, pointB: Vector2.UP.mul(0.15), damping: 0.02 })]))
     scene.addEntity(new Entity(new Vector2(4, --y), 0, [chain[chain.length - 1]]))
     for (let i = 0; i < chain.length - 1; i++)
     {
         let a = chain[i]
         let b = chain[i + 1]
 
-        scene.addEntity(new Entity(new Vector2(4, --y), 0, [a, new Constraint(0.25, a, b, { pointA: Vector2.DOWN.mul(0.15), pointB: Vector2.UP.mul(0.15) })]))
+        y -= 0.6
+        scene.addEntity(new Entity(new Vector2(4, y), 0, [a, new Constraint(0.25, a, b, { pointA: Vector2.DOWN.mul(0.15), pointB: Vector2.UP.mul(0.15) })]))
     }
 
     let engine = new LuminEngine(scene)
