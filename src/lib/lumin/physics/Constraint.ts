@@ -1,5 +1,6 @@
 import Vector2 from "../../math/Vector2"
-import type Body from "./Body"
+import { Component } from "../LuminEngine"
+import type RigidBody from "./RigidBody"
 import type Shape from "./Shape"
 
 export interface ConstraintParams
@@ -13,7 +14,7 @@ export interface ConstraintParams
 
 }
 
-export default class Constraint
+export default class Constraint extends Component
 {
 
     public readonly pointA: Vector2
@@ -22,19 +23,22 @@ export default class Constraint
     public stiffness: number
     public damping: number
 
-    public constructor(public readonly length: number, public readonly a: Body<Shape>, public readonly b: Body<Shape>,
+    public constructor(public readonly length: number, public readonly a: RigidBody<Shape>, public readonly b: RigidBody<Shape>,
     {
         pointA = Vector2.ZERO,
         pointB = Vector2.ZERO,
         stiffness = 1, damping = 1
     }: ConstraintParams = {})
     {
+        super()
         this.pointA = pointA
         this.pointB = pointB
 
         this.stiffness = stiffness
         this.damping = damping
     }
+
+    public override init() { this.scene.physics.constraints.push(this) }
 
 
     public resolve(iterations: number)
@@ -69,13 +73,13 @@ export default class Constraint
         this.b.position = this.b.position.add(force.mul(this.damping * this.b.mass / total))
     }
 
-    public render(c: CanvasRenderingContext2D)
+    public debug(c: CanvasRenderingContext2D)
     {
         c.strokeStyle = "black"
         c.strokeWidth = 1
 
-        let u = this.a.position.add(this.pointA.rotate(this.a.angle))
-        let v = this.b.position.add(this.pointB.rotate(this.b.angle))
+        let u = this.a.entity.position.add(this.pointA.rotate(this.a.angle))
+        let v = this.b.entity.position.add(this.pointB.rotate(this.b.angle))
 
         c.beginPath()
         c.moveTo(u.x, u.y)

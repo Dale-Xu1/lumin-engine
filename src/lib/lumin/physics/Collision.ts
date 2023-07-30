@@ -1,6 +1,6 @@
 import Vector2 from "../../math/Vector2"
-import type Body from "./Body"
-import { BodyType } from "./Body"
+import type RigidBody from "./RigidBody"
+import { BodyType } from "./RigidBody"
 import Manifold from "./Manifold"
 import type Shape from "./Shape"
 import { Bounds, Circle, Polygon, Ray } from "./Shape"
@@ -8,7 +8,7 @@ import { Bounds, Circle, Polygon, Ray } from "./Shape"
 export class Detector
 {
 
-    public constructor(private readonly bodies: Body<Shape>[]) { }
+    public constructor(private readonly bodies: RigidBody<Shape>[]) { }
 
     public detect(): Manifold[]
     {
@@ -22,9 +22,9 @@ export class Detector
         return collisions
     }
 
-    private broadPhase(): [Body<Shape>, Body<Shape>][]
+    private broadPhase(): [RigidBody<Shape>, RigidBody<Shape>][]
     {
-        let pairs: [Body<Shape>, Body<Shape>][] = []
+        let pairs: [RigidBody<Shape>, RigidBody<Shape>][] = []
 
         // Sort bodies based on AABB minimum x coordinate
         let bounds = this.bodies.map(body => body.getBounds())
@@ -54,7 +54,7 @@ export class Detector
 export class RayIntersection
 {
 
-    public constructor(public readonly body: Body<Shape>,
+    public constructor(public readonly body: RigidBody<Shape>,
         public readonly position: Vector2, public readonly normal: Vector2,
         public readonly distance: number) { }
 
@@ -63,7 +63,7 @@ export class RayIntersection
 namespace Collision
 {
 
-    export function test(a: Body<Shape>, b: Body<Shape>): Manifold | null
+    export function test(a: RigidBody<Shape>, b: RigidBody<Shape>): Manifold | null
     {
         if (a.is(Circle) && b.is(Circle)) return circleCircle(a, b)
         if (a.is(Circle) && b.is(Polygon)) return polygonCircle(b, a)
@@ -73,7 +73,7 @@ namespace Collision
         return null
     }
 
-    export function circleCircle(a: Body<Circle>, b: Body<Circle>): Manifold | null
+    export function circleCircle(a: RigidBody<Circle>, b: RigidBody<Circle>): Manifold | null
     {
         let radius = b.shape.radius
         let total = a.shape.radius + radius
@@ -94,7 +94,7 @@ namespace Collision
     }
 
 
-    export function polygonPolygon(a: Body<Polygon>, b: Body<Polygon>): Manifold | null
+    export function polygonPolygon(a: RigidBody<Polygon>, b: RigidBody<Polygon>): Manifold | null
     {
         // Find axis of least penetration
         let u = findAxis(a, b); if (u === null) return null
@@ -129,7 +129,7 @@ namespace Collision
         return new Manifold(a, b, contacts, normal, penetration)
     }
 
-    function findAxis(a: Body<Polygon>, b: Body<Polygon>): [number, number] | null
+    function findAxis(a: RigidBody<Polygon>, b: RigidBody<Polygon>): [number, number] | null
     {
         let vertices = a.shape.transform.vertices
         let normals = a.shape.transform.normals
@@ -151,7 +151,7 @@ namespace Collision
         return [index, min]
     }
 
-    function findSupport(a: Body<Polygon>, b: Body<Polygon>, face: Vector2, normal: Vector2): number | null
+    function findSupport(a: RigidBody<Polygon>, b: RigidBody<Polygon>, face: Vector2, normal: Vector2): number | null
     {
         let vertices = b.shape.transform.vertices
         let offset = b.position.sub(a.position)
@@ -170,7 +170,7 @@ namespace Collision
         return max
     }
 
-    function findIncident(b: Body<Polygon>, normal: Vector2): [Vector2, Vector2]
+    function findIncident(b: RigidBody<Polygon>, normal: Vector2): [Vector2, Vector2]
     {
         // Find normal on B that is most in the opposite direction as the normal of the reference face
         let normals = b.shape.transform.normals
@@ -201,7 +201,7 @@ namespace Collision
     }
 
 
-    export function polygonCircle(a: Body<Polygon>, b: Body<Circle>): Manifold | null
+    export function polygonCircle(a: RigidBody<Polygon>, b: RigidBody<Circle>): Manifold | null
     {
         let vertices = a.shape.transform.vertices
         let normals = a.shape.transform.normals
@@ -226,7 +226,7 @@ namespace Collision
         return new Manifold(a, b, [contact], normal, penetration)
     }
 
-    function findEdge(a: Body<Polygon>, b: Body<Circle>,
+    function findEdge(a: RigidBody<Polygon>, b: RigidBody<Circle>,
         vertices: Vector2[], normals: Vector2[]): [number, number] | null
     {
         let radius = b.shape.radius
@@ -253,7 +253,7 @@ namespace Collision
         return [index, min]
     }
 
-    function corner(a: Body<Polygon>, b: Body<Circle>, vertex: Vector2): Manifold | null
+    function corner(a: RigidBody<Polygon>, b: RigidBody<Circle>, vertex: Vector2): Manifold | null
     {
         let radius = b.shape.radius
         let distSq = vertex.lengthSq
@@ -269,7 +269,7 @@ namespace Collision
     }
 
 
-    export function testPoint(body: Body<Shape>, point: Vector2): boolean
+    export function testPoint(body: RigidBody<Shape>, point: Vector2): boolean
     {
         if (body.is(Circle)) return pointCircle(body, point)
         if (body.is(Polygon)) return pointPolygon(body, point)
@@ -277,7 +277,7 @@ namespace Collision
         return false
     }
 
-    export function pointCircle(circle: Body<Circle>, point: Vector2): boolean
+    export function pointCircle(circle: RigidBody<Circle>, point: Vector2): boolean
     {
         let distSq = point.sub(circle.position).lengthSq
         let radius = circle.shape.radius
@@ -285,7 +285,7 @@ namespace Collision
         return distSq < radius * radius
     }
 
-    export function pointPolygon(polygon: Body<Polygon>, point: Vector2): boolean
+    export function pointPolygon(polygon: RigidBody<Polygon>, point: Vector2): boolean
     {
         let vertices = polygon.shape.transform.vertices
         let normals = polygon.shape.transform.normals
@@ -302,7 +302,7 @@ namespace Collision
     }
 
 
-    export function testRay(body: Body<Shape>, ray: Ray): RayIntersection | null
+    export function testRay(body: RigidBody<Shape>, ray: Ray): RayIntersection | null
     {
         if (body.is(Circle)) return rayCircle(body, ray)
         if (body.is(Polygon)) return rayPolygon(body, ray)
@@ -326,7 +326,7 @@ namespace Collision
         return true
     }
 
-    export function rayCircle(circle: Body<Circle>, ray: Ray): RayIntersection | null
+    export function rayCircle(circle: RigidBody<Circle>, ray: Ray): RayIntersection | null
     {
         let d = ray.position.sub(circle.position)
         let p1 = -ray.direction.dot(d)
@@ -345,7 +345,7 @@ namespace Collision
         return new RayIntersection(circle, position, normal, t)
     }
 
-    export function rayPolygon(polygon: Body<Polygon>, ray: Ray): RayIntersection | null
+    export function rayPolygon(polygon: RigidBody<Polygon>, ray: Ray): RayIntersection | null
     {
         let vertices = polygon.shape.transform.vertices.map(vertex => vertex.add(polygon.position))
         let normals = polygon.shape.transform.normals

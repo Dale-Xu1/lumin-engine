@@ -1,5 +1,5 @@
 import Vector2 from "../../math/Vector2"
-import type Body from "./Body"
+import type RigidBody from "./RigidBody"
 import Collision, { Detector, RayIntersection } from "./Collision"
 import type Constraint from "./Constraint"
 import type Manifold from "./Manifold"
@@ -19,7 +19,7 @@ export interface PhysicsParams
 export default class PhysicsEngine
 {
 
-    public readonly bodies: Body<Shape>[] = []
+    public readonly bodies: RigidBody<Shape>[] = []
     public readonly constraints: Constraint[] = []
 
     private readonly gravity: Vector2
@@ -41,9 +41,9 @@ export default class PhysicsEngine
     }
 
 
-    public testPoint(point: Vector2): Body<Shape>[]
+    public testPoint(point: Vector2): RigidBody<Shape>[]
     {
-        let bodies: Body<Shape>[] = []
+        let bodies: RigidBody<Shape>[] = []
         for (let body of this.bodies)
         {
             let bounds = body.getBounds()
@@ -76,7 +76,7 @@ export default class PhysicsEngine
     public update(delta: number)
     {
         this.collisions = []
-        for (let body of this.bodies) body.update(delta, this.gravity)
+        for (let body of this.bodies) body.integrate(delta, this.gravity)
 
         for (let i = 0; i < this.iterations; i++)
         {
@@ -99,12 +99,12 @@ export default class PhysicsEngine
         this.collisions.push(...collisions)
     }
 
-    public render(c: CanvasRenderingContext2D, alpha: number)
+    public preRender(alpha: number) { for (let body of this.bodies) body.preRender(alpha) }
+    public debug(c: CanvasRenderingContext2D)
     {
-        for (let collision of this.collisions) collision.render(c)
-
-        for (let body of this.bodies) body.render(c, alpha)
-        for (let constraint of this.constraints) constraint.render(c) // TODO: Constraint rendering with interpolation
+        for (let collision of this.collisions) collision.debug(c)
+        for (let constraint of this.constraints) constraint.debug(c)
+        for (let body of this.bodies) body.debug(c)
     }
 
 }

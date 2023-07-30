@@ -1,5 +1,5 @@
 import Vector2 from "../../math/Vector2"
-import type Body from "./Body"
+import type RigidBody from "./RigidBody"
 import type Shape from "./Shape"
 
 const SLOP = 0
@@ -7,8 +7,8 @@ const SLOP = 0
 export default class Manifold
 {
 
-    public readonly a: Body<Shape>
-    public readonly b: Body<Shape>
+    public readonly a: RigidBody<Shape>
+    public readonly b: RigidBody<Shape>
 
     public readonly contacts: Vector2[]
     public readonly normal: Vector2
@@ -16,7 +16,7 @@ export default class Manifold
     public readonly penetration: number
 
 
-    public constructor(a: Body<Shape>, b: Body<Shape>, contacts: Vector2[], normal: Vector2, penetration: number)
+    public constructor(a: RigidBody<Shape>, b: RigidBody<Shape>, contacts: Vector2[], normal: Vector2, penetration: number)
     {
         this.a = a
         this.b = b
@@ -107,7 +107,7 @@ export default class Manifold
     }
 
 
-    public render(c: CanvasRenderingContext2D)
+    public debug(c: CanvasRenderingContext2D)
     {
         c.strokeStyle = "red"
         c.fillStyle = "green"

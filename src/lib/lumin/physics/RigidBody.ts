@@ -1,4 +1,5 @@
 import Vector2 from "../../math/Vector2"
+import { Component } from "../LuminEngine"
 import type { Bounds } from "./Shape"
 import type Shape from "./Shape"
 
@@ -19,16 +20,19 @@ export interface BodyParams
 
 interface Constructor<T> { new(...args: any[]): T }
 
-export default class Body<T extends Shape>
+export default class RigidBody<T extends Shape> extends Component
 {
 
+    public position!: Vector2
     public velocity: Vector2 = Vector2.ZERO
     private force: Vector2 = Vector2.ZERO
 
+    public angle!: number
     public rotation: number = 0
     private torque: number = 0
 
     public readonly type: BodyType
+
     public readonly mass: number
     public readonly inertia: number
 
@@ -39,7 +43,7 @@ export default class Body<T extends Shape>
     public gravityScale: number
 
 
-    public constructor(public readonly shape: T, public position: Vector2, public angle: number,
+    public constructor(public readonly shape: T,
     {
         type = BodyType.Dynamic,
         friction = 0.3, staticFriction = 0.5,
@@ -47,10 +51,8 @@ export default class Body<T extends Shape>
         gravityScale = 1
     }: BodyParams = {})
     {
+        super()
         this.shape = shape
-
-        this.previousPosition = position
-        this.previousAngle = angle
 
         this.type = type
         if (type === BodyType.Dynamic)
@@ -75,7 +77,15 @@ export default class Body<T extends Shape>
         this.shape.update(this)
     }
 
-    public is<T extends Shape>(shape: Constructor<T>): this is Body<T> { return this.shape instanceof shape }
+    public override init()
+    {
+        this.previousPosition = this.position = this.entity.position
+        this.previousAngle = this.angle = this.entity.angle
+
+        this.scene.physics.bodies.push(this)
+    }
+
+    public is<T extends Shape>(shape: Constructor<T>): this is RigidBody<T> { return this.shape instanceof shape }
 
 
     public applyTorque(torque: number) { this.torque += torque }
@@ -91,20 +101,16 @@ export default class Body<T extends Shape>
         this.rotation += contact.cross(impulse) * this.inertia
     }
 
-    private previousPosition: Vector2 // Previous data is kept for interpolation
-    private previousAngle: number
+    private previousPosition!: Vector2 // Previous data is kept for interpolation
+    private previousAngle!: number
 
-    public update(delta: number, gravity: Vector2)
+    public integrate(delta: number, gravity: Vector2)
     {
         this.previousPosition = this.position
         this.previousAngle = this.angle
 
-        if (this.type === BodyType.Dynamic) this.integrate(delta, gravity)
-        this.shape.update(this)
-    }
+        if (this.type === BodyType.Static) return void this.shape.update(this)
 
-    private integrate(delta: number, gravity: Vector2)
-    {
         // Calculate acceleration
         let acceleration = this.force.mul(this.mass).add(gravity.mul(this.gravityScale))
 
@@ -116,6 +122,8 @@ export default class Body<T extends Shape>
         this.rotation += this.torque * this.inertia * delta
         this.angle += this.rotation * delta
 
+        this.shape.update(this)
+
         // Clear forces
         this.force = Vector2.ZERO
         this.torque = 0
@@ -124,22 +132,19 @@ export default class Body<T extends Shape>
     public getBounds(): Bounds { return this.shape.getBounds(this) }
 
     private lerp(a: number, b: number, t: number): number { return a + (b - a) * t }
-    public render(c: CanvasRenderingContext2D, alpha: number)
+    public preRender(alpha: number)
     {
         // Interpolate position
-        let position = Vector2.lerp(this.previousPosition, this.position, alpha)
-        let angle = this.lerp(this.previousAngle, this.angle, alpha)
+        this.entity.position = Vector2.lerp(this.previousPosition, this.position, alpha)
+        this.entity.angle = this.lerp(this.previousAngle, this.angle, alpha)
+    }
 
-        // let bound = this.shape.getBounds(this)
-
-        // c.strokeWidth = 1
-        // c.strokeStyle = "gray"
-        // c.strokeRect(bound.min.x, bound.min.y, bound.max.x - bound.min.x, bound.max.y - bound.min.y)
-
+    public debug(c: CanvasRenderingContext2D)
+    {
         // Apply transformations
         c.save()
-        c.translate(position.x, position.y)
-        c.rotate(angle)
+        c.translate(this.entity.position.x, this.entity.position.y)
+        c.rotate(this.entity.angle)
 
         this.shape.render(c)
         c.restore()

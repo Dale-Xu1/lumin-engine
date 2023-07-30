@@ -1,5 +1,5 @@
 import Vector2 from "../../math/Vector2"
-import type Body from "./Body"
+import type RigidBody from "./RigidBody"
 
 export default abstract class Shape
 {
@@ -9,9 +9,9 @@ export default abstract class Shape
 
     public abstract calculate(): [number, number]
 
-    public abstract getBounds(body: Body<this>): Bounds
+    public abstract getBounds(body: RigidBody<this>): Bounds
 
-    public update(body: Body<this>) { }
+    public update(body: RigidBody<this>) { }
     public abstract render(c: CanvasRenderingContext2D): void
 
 }
@@ -19,7 +19,7 @@ export default abstract class Shape
 export class Bounds
 {
 
-    public constructor(public readonly body: Body<Shape>,
+    public constructor(public readonly body: RigidBody<Shape>,
         public readonly min: Vector2, public readonly max: Vector2) { }
 
 }
@@ -40,7 +40,7 @@ export class Circle extends Shape
         return [mass, inertia]
     }
 
-    public override getBounds(body: Body<this>): Bounds
+    public override getBounds(body: RigidBody<this>): Bounds
     {
         let r = new Vector2(this.radius, this.radius)
         return new Bounds(body, body.position.sub(r), body.position.add(r))
@@ -121,7 +121,7 @@ export class Polygon extends Shape
         return [mass, inertia]
     }
 
-    public override getBounds(body: Body<this>): Bounds
+    public override getBounds(body: RigidBody<this>): Bounds
     {
         // Compute AABB for polygon
         let minX = Infinity, minY = Infinity
@@ -141,7 +141,7 @@ export class Polygon extends Shape
         return new Bounds(body, body.position.add(min), body.position.add(max))
     }
 
-    public override update(body: Body<this>)
+    public override update(body: RigidBody<this>)
     {
         let vertices = this.vertices.map(vertex => vertex.rotate(body.angle))
         let normals = this.normals.map(normal => normal.rotate(body.angle))
