@@ -32,7 +32,7 @@ export default class Manifold
     {
         this.correctPositions(rate)
         if (this.penetration < SLOP) return
-        
+
         for (let contact of this.contacts) this.applyImpulse(contact)
     }
 

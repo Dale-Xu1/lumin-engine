@@ -41,6 +41,7 @@ export class Detector
                 if (b.min.y > a.max.y || b.max.y < a.min.y ||
                     a.body.type === BodyType.Static && b.body.type === BodyType.Static) continue
 
+                // TODO: Collision layers
                 pairs.push([a.body, b.body])
             }
         }

@@ -1,6 +1,7 @@
 import Vector2 from "../../math/Vector2"
 import type Body from "./Body"
 import Collision, { Detector, RayIntersection } from "./Collision"
+import type Constraint from "./Constraint"
 import type Manifold from "./Manifold"
 import type { Ray } from "./Shape"
 import type Shape from "./Shape"
@@ -10,7 +11,8 @@ export interface PhysicsParams
 
     gravity?: Vector2
 
-    iterations?: number
+    collisionIterations?: number
+    constraintIterations?: number
     correctionRate?: number
 
 }
@@ -19,22 +21,26 @@ export default class PhysicsEngine
 {
 
     public readonly bodies: Body<Shape>[] = []
+    public readonly constraints: Constraint[] = []
 
     private readonly gravity: Vector2
 
-    private readonly iterations: number
+    private readonly collisionIterations: number
+    private readonly constraintIterations: number
     private readonly rate: number
 
     public constructor(
     {
         gravity = Vector2.DOWN.mul(9.81),
-        iterations = 12,
+        collisionIterations = 12,
+        constraintIterations = 8,
         correctionRate = 0.4
     }: PhysicsParams = {})
     {
         this.gravity = gravity
 
-        this.iterations = iterations
+        this.collisionIterations = collisionIterations
+        this.constraintIterations = constraintIterations
         this.rate = correctionRate
     }
 
@@ -73,28 +79,33 @@ export default class PhysicsEngine
     private collisions: Manifold[] = []
     public update(delta: number)
     {
+        this.collisions = []
         for (let body of this.bodies) body.update(delta, this.gravity)
 
-        // TODO: Collision layers
-
-        this.collisions = []
-        for (let i = 0; i < this.iterations; i++) this.resolve()
+        for (let i = 0; i < this.constraintIterations; i++) this.resolveConstraints()
+        for (let i = 0; i < this.collisionIterations; i++) this.resolveCollisions()
     }
 
-    private resolve()
+    private resolveConstraints()
+    {
+        for (let constraint of this.constraints) constraint.resolve(this.constraintIterations)
+    }
+
+    private resolveCollisions()
     {
         let detector = new Detector(this.bodies)
-
         let collisions = detector.detect()
-        for (let collision of collisions) collision.resolve(this.rate)
 
+        for (let collision of collisions) collision.resolve(this.rate)
         this.collisions.push(...collisions)
     }
 
     public render(c: CanvasRenderingContext2D, alpha: number)
     {
         for (let collision of this.collisions) collision.render(c)
+
         for (let body of this.bodies) body.render(c, alpha)
+        for (let constraint of this.constraints) constraint.render(c) // TODO: Constraint rendering with interpolation
     }
 
 }

@@ -1,10 +1,5 @@
 import Vector2 from "../math/Vector2"
-import type Body from "./physics/Body"
-import Collision, { Detector, RayIntersection } from "./physics/Collision"
-import type Manifold from "./physics/Manifold"
 import type PhysicsEngine from "./physics/PhysicsEngine"
-import type { Ray } from "./physics/Shape"
-import type Shape from "./physics/Shape"
 
 declare global
 {

@@ -22,13 +22,9 @@ interface Constructor<T> { new(...args: any[]): T }
 export default class Body<T extends Shape>
 {
 
-    public readonly shape: T
-
-    public position: Vector2
     public velocity: Vector2 = Vector2.ZERO
     private force: Vector2 = Vector2.ZERO
 
-    public angle: number
     public rotation: number = 0
     private torque: number = 0
 
@@ -43,7 +39,7 @@ export default class Body<T extends Shape>
     public gravityScale: number
 
 
-    public constructor(shape: T, position: Vector2, angle: number,
+    public constructor(public readonly shape: T, public position: Vector2, public angle: number,
     {
         type = BodyType.Dynamic,
         friction = 0.3, staticFriction = 0.5,
@@ -53,8 +49,8 @@ export default class Body<T extends Shape>
     {
         this.shape = shape
 
-        this.position = this.previousPosition = position
-        this.angle = this.previousAngle = angle
+        this.previousPosition = position
+        this.previousAngle = angle
 
         this.type = type
         if (type === BodyType.Dynamic)
@@ -86,7 +82,7 @@ export default class Body<T extends Shape>
     public applyForce(force: Vector2, contact?: Vector2)
     {
         this.force = this.force.add(force)
-        if (contact) this.torque += contact.cross(force) // Calculate torque based on contact point
+        if (contact) this.applyTorque(contact.cross(force)) // Calculate torque based on contact point
     }
 
     public applyImpulse(impulse: Vector2, contact: Vector2)
@@ -95,8 +91,8 @@ export default class Body<T extends Shape>
         this.rotation += contact.cross(impulse) * this.inertia
     }
 
-    private previousPosition!: Vector2 // Previous data is kept for interpolation
-    private previousAngle!: number
+    private previousPosition: Vector2 // Previous data is kept for interpolation
+    private previousAngle: number
 
     public update(delta: number, gravity: Vector2)
     {
@@ -111,8 +107,6 @@ export default class Body<T extends Shape>
     {
         // Calculate acceleration
         let acceleration = this.force.mul(this.mass).add(gravity.mul(this.gravityScale))
-
-        // TODO: Look into better integration methods
 
         // Integrate position
         this.velocity = this.velocity.add(acceleration.mul(delta))
