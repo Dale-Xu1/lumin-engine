@@ -1,12 +1,13 @@
 <script lang="ts">
 import { onMount } from "svelte"
 
-import LuminEngine, { Camera, Component, Entity, Scene } from "./lumin/LuminEngine"
+import LuminEngine, { Scene } from "./lumin/LuminEngine"
 import Vector2 from "./math/Vector2"
 import RigidBody, { BodyType } from "./lumin/physics/RigidBody"
-import Shape, { Circle, Rectangle } from "./lumin/physics/Shape"
+import Shape, { Circle, Polygon, Ray, Rectangle } from "./lumin/physics/Shape"
 import PhysicsEngine from "./lumin/physics/PhysicsEngine"
 import Constraint from "./lumin/physics/Constraint"
+import Entity, { Camera, Component } from "./lumin/Entity"
 
 let canvas: HTMLCanvasElement
 let scene: Scene
@@ -94,6 +95,30 @@ onMount(() =>
 
                 this.body.applyForce(offset.normalize().mul(speed * 5))
                 this.body.applyTorque(angle * speed)
+            }
+
+            public override render(c: CanvasRenderingContext2D)
+            {
+                let t = c.getTransform()
+                c.restore()
+
+                let intersection = scene.physics.testRay(new Ray(this.entity.position, Vector2.DOWN.rotate(this.entity.angle)))
+                if (intersection !== null)
+                {
+                    c.strokeStyle = "red"
+                    c.strokeWidth = 1
+
+                    let u = this.entity.position
+                    let v = intersection.position
+
+                    c.beginPath()
+                    c.moveTo(u.x, u.y)
+                    c.lineTo(v.x, v.y)
+                    c.stroke()
+                }
+
+                c.save()
+                c.setTransform(t)
             }
 
         }()

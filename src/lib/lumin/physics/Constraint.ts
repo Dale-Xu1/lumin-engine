@@ -1,5 +1,5 @@
 import Vector2 from "../../math/Vector2"
-import { Component } from "../LuminEngine"
+import { Component } from "../Entity"
 import type RigidBody from "./RigidBody"
 import type Shape from "./Shape"
 

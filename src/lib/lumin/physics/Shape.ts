@@ -81,7 +81,6 @@ export class Polygon extends Shape
 
     public constructor(public readonly vertices: Vector2[], density: number = 1)
     {
-        // TODO: Test for concave polygons
         super(density)
 
         // Calculate normals
@@ -92,7 +91,12 @@ export class Polygon extends Shape
 
             // Get perpendicular vector
             let direction = b.sub(a)
-            this.normals[i] = new Vector2(direction.y, -direction.x).normalize()
+            let normal = new Vector2(direction.y, -direction.x).normalize()
+            this.normals[i] = normal
+
+            // Test if polygon is concave
+            let c = vertices[(i + 2) % vertices.length]
+            if (c.sub(b).dot(normal) > 0) throw new Error("Polygon cannot be concave")
         }
     }
 
