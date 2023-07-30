@@ -32,10 +32,10 @@ export default class Body<T extends Shape>
     public readonly mass: number
     public readonly inertia: number
 
-    public readonly friction: number
-    public readonly staticFriction: number
+    public friction: number
+    public staticFriction: number
 
-    public readonly restitution: number
+    public restitution: number
     public gravityScale: number
 
 

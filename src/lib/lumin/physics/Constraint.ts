@@ -19,8 +19,8 @@ export default class Constraint
     public readonly pointA: Vector2
     public readonly pointB: Vector2
 
-    public readonly stiffness: number
-    public readonly damping: number
+    public stiffness: number
+    public damping: number
 
     public constructor(public readonly length: number, public readonly a: Body<Shape>, public readonly b: Body<Shape>,
     {
@@ -49,17 +49,24 @@ export default class Constraint
         let difference = delta.length - this.length
 
         // Apply restorative force as impulse
-        let force = normal.mul(this.stiffness * difference / iterations)
+        let force = normal.mul(this.stiffness * difference)
+        this.correctPositions(force)
+
+        force = force.div(iterations)
         this.a.applyImpulse(force.neg(), pointA)
         this.b.applyImpulse(force, pointB)
 
         // Reduce velocity along normal of the constraint
-        this.a.position = this.a.position.sub(force.mul(this.damping * this.a.mass))
-        this.b.position = this.b.position.add(force.mul(this.damping * this.b.mass))
-
         let velocity = normal.mul(this.damping * normal.dot(rv) / iterations)
         this.a.applyImpulse(velocity.neg(), pointA)
         this.b.applyImpulse(velocity, pointB)
+    }
+
+    private correctPositions(force: Vector2)
+    {
+        let total = this.a.mass + this.b.mass
+        this.a.position = this.a.position.sub(force.mul(this.damping * this.a.mass / total))
+        this.b.position = this.b.position.add(force.mul(this.damping * this.b.mass / total))
     }
 
     public render(c: CanvasRenderingContext2D)
