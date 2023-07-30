@@ -1,6 +1,9 @@
-import Vector2 from "../math/Vector2"
+import Vector2 from "./Vector2"
 import Entity, { Camera } from "./Entity"
 import type PhysicsEngine from "./physics/PhysicsEngine"
+
+const DEBUG = true
+const MAX_DELAY = 200
 
 declare global
 {
@@ -10,25 +13,17 @@ declare global
     }
 }
 
-const DEBUG = true
-const MAX_DELAY = 200
-
 export default class LuminEngine
 {
 
     private readonly stack: Scene[] = []
     private get scene(): Scene { return this.stack[this.stack.length - 1] }
 
-    private readonly delta: number
-    private readonly delay: number
-
-    public constructor(scene: Scene, delta: number = 0.02)
+    public constructor(scene: Scene, private readonly delta: number = 0.02)
     {
         this.enter(scene)
 
         this.delta = delta
-        this.delay = delta * 1000 // Convert to milliseconds
-
         this.frame = this.frame.bind(this)
     }
 
@@ -55,20 +50,21 @@ export default class LuminEngine
     private frame(now: number)
     {
         window.requestAnimationFrame(this.frame)
+        let delay = this.delta * 1000 // Convert to milliseconds
 
         // Accumulate lagged time
         this.accumulated += now - this.previous
         this.previous = now
 
         if (this.accumulated > MAX_DELAY) this.accumulated = MAX_DELAY // Prevent spiral of death
-        while (this.accumulated > this.delay)
+        while (this.accumulated > delay)
         {
-            this.accumulated -= this.delay
+            this.accumulated -= delay
             if (this.scene !== null) this.scene.update(this.delta)
         }
 
         // Calculate alpha for interpolation
-        let alpha = this.accumulated / this.delay
+        let alpha = this.accumulated / delay
         if (this.scene !== null) this.scene.render(alpha)
     }
 
@@ -119,9 +115,6 @@ export class Scene
 
     public update(delta: number)
     {
-        // TODO: Scene description file
-        // TODO: Particle system
-
         for (let entity of this.entities) entity.update(delta)
         this.physics.update(delta)
     }
@@ -129,7 +122,7 @@ export class Scene
     public render(alpha: number)
     {
         this.physics.preRender(alpha)
-        this.camera.transform()
+        this.camera.reset()
 
         let c = this.camera.context
         for (let entity of this.entities) entity.render(c, alpha)

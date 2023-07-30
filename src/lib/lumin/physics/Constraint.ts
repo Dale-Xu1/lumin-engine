@@ -1,4 +1,4 @@
-import Vector2 from "../../math/Vector2"
+import Vector2 from "../Vector2"
 import { Component } from "../Entity"
 import type RigidBody from "./RigidBody"
 import type Shape from "./Shape"

@@ -1,4 +1,4 @@
-import type Vector2 from "../math/Vector2"
+import type Vector2 from "./Vector2"
 import type { Scene } from "./LuminEngine"
 
 interface Constructor<T> { new(...args: any[]): T }
@@ -53,6 +53,7 @@ export abstract class Component
 
 
     public init() { }
+
     public update(delta: number) { }
     public render(c: CanvasRenderingContext2D, alpha: number) { }
 
@@ -90,7 +91,7 @@ export class Camera extends Component
     }
 
 
-    public transform()
+    public reset()
     {
         let c = this.context
         c.restore()
