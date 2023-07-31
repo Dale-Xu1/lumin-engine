@@ -67,6 +67,7 @@ export default class Manifold
 
     private applyImpulse(start: Vector2)
     {
+        if (this.penetration < SLOP) return
         let [r1, r2] = this.calculateContact(start)
 
         let normal = this.normal

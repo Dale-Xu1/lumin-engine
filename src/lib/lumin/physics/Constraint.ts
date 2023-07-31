@@ -85,6 +85,7 @@ export default class Constraint extends Component
         this.b.position = this.b.position.add(normal.mul(correction * this.b.mass))
     }
 
+
     public debug(c: CanvasRenderingContext2D)
     {
         c.strokeStyle = "black"

@@ -133,7 +133,7 @@ onMount(() =>
     }
 
     let y = 4
-    scene.addEntity(new Entity(new Vector2(4, y), 0, [start, new Constraint(0.5, start, chain[0], { pointA: Vector2.ZERO, pointB: Vector2.UP.mul(0.15), damping: 0.02 })]))
+    scene.addEntity(new Entity(new Vector2(4, y), 0, [start, new Constraint(0.5, start, chain[0], { pointA: Vector2.ZERO, pointB: Vector2.UP.mul(0.15), damping: 0.01 })]))
     for (let i = 0; i < chain.length - 1; i++)
     {
         let a = chain[i]

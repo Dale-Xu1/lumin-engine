@@ -30,7 +30,7 @@ export default class PhysicsEngine
     public constructor(
     {
         gravity = Vector2.DOWN.mul(9.81),
-        iterations = 12,
+        iterations = 16,
         correctionRate = 0.4
     }: PhysicsParams = {})
     {
