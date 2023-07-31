@@ -97,6 +97,12 @@ export class Scene
         entity.init()
     }
 
+    public removeEntity(entity: Entity)
+    {
+        let index = this.entities.indexOf(entity)
+        if (index >= 0) this.entities.splice(index, 1)
+    }
+
     public toWorldSpace(screen: Vector2): Vector2
     {
         let camera = this.camera

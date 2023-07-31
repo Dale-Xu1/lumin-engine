@@ -27,6 +27,12 @@ export default class Entity
         this.components.push(component)
     }
 
+    public removeComponent(component: Component)
+    {
+        let index = this.components.indexOf(component)
+        if (index >= 0) this.components.splice(index, 1)
+    }
+
     public init() { for (let component of this.components) component.init() }
     public update(delta: number) { for (let component of this.components) component.update(delta) }
 

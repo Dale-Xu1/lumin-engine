@@ -2,7 +2,7 @@ import Vector2 from "../Vector2"
 import type RigidBody from "./RigidBody"
 import type Shape from "./Shape"
 
-const SLOP = 0
+const SLOP = 0.01
 
 export default class Manifold
 {
@@ -14,6 +14,7 @@ export default class Manifold
     public readonly normal: Vector2
 
     public readonly penetration: number
+    private readonly separation: number
 
 
     public constructor(a: RigidBody<Shape>, b: RigidBody<Shape>, contacts: Vector2[], normal: Vector2, penetration: number)
@@ -25,27 +26,25 @@ export default class Manifold
         this.normal = normal
 
         this.penetration = penetration
+        this.separation = this.b.position.sub(this.a.position).dot(normal)
     }
 
 
-    public resolve(rate: number)
+    public resolve() { for (let contact of this.contacts) this.applyImpulse(contact) }
+    public correctPositions(rate: number)
     {
-        this.correctPositions(rate)
-        if (this.penetration < SLOP) return
+        // Calculate updated penetration
+        let separation = this.b.position.sub(this.a.position).dot(this.normal) - this.separation
+        let penetration = this.penetration - separation
+        if (penetration < SLOP) return
 
-        for (let contact of this.contacts) this.applyImpulse(contact)
-    }
-
-    private correctPositions(rate: number)
-    {
         // Distribute correction based on masses
         let total = this.a.mass + this.b.mass
-        let correction = Math.max(this.penetration - SLOP, 0) / total * rate
+        let correction = Math.max(penetration - SLOP, 0) / total * rate
 
         this.a.position = this.a.position.sub(this.normal.mul(correction * this.a.mass))
         this.b.position = this.b.position.add(this.normal.mul(correction * this.b.mass))
     }
-
 
     private calculateContact(start: Vector2): [Vector2, Vector2]
     {

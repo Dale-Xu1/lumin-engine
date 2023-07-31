@@ -72,31 +72,25 @@ export default class PhysicsEngine
     }
 
 
-    private collisions: Manifold[] = []
+    private collisions!: Manifold[]
     public update(delta: number)
     {
-        this.collisions = []
         for (let body of this.bodies) body.integrate(delta, this.gravity)
+
+        let detector = new Detector(this.bodies)
+        this.collisions = detector.detect()
 
         for (let i = 0; i < this.iterations; i++)
         {
-            this.resolveConstraints()
-            this.resolveCollisions()
+            for (let constraint of this.constraints) constraint.resolve(this.iterations)
+            for (let collision of this.collisions) collision.resolve()
         }
-    }
 
-    private resolveConstraints()
-    {
-        for (let constraint of this.constraints) constraint.resolve(this.iterations)
-    }
-
-    private resolveCollisions()
-    {
-        let detector = new Detector(this.bodies)
-        let collisions = detector.detect()
-
-        for (let collision of collisions) collision.resolve(this.rate)
-        this.collisions.push(...collisions)
+        for (let i = 0; i < this.iterations; i++)
+        {
+            for (let constraint of this.constraints) constraint.correctPositions(this.rate)
+            for (let collision of this.collisions) collision.correctPositions(this.rate)
+        }
     }
 
     public preRender(alpha: number) { for (let body of this.bodies) body.preRender(alpha) }

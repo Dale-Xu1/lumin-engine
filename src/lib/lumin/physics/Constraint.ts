@@ -41,30 +41,48 @@ export default class Constraint extends Component
     public override init() { this.scene.physics.constraints.push(this) }
 
 
-    public resolve(iterations: number)
+    private get localPoints(): [Vector2, Vector2]
     {
-        let pointA = this.pointA.rotate(this.a.angle)
-        let pointB = this.pointB.rotate(this.b.angle)
+        return [this.pointA.rotate(this.a.angle), this.pointB.rotate(this.b.angle)]
+    }
 
+    private calculateDifference(): [Vector2, number]
+    {
+        let [pointA, pointB] = this.localPoints
         let delta = this.a.position.add(pointA).sub(this.b.position.add(pointB))
         let normal = delta.normalize()
 
-        let rv = this.a.velocity.sub(this.b.velocity)
         let difference = delta.length - this.length
-
-        this.correctPositions(normal.mul(this.stiffness * this.damping * difference))
-
-        // Apply restorative force as impulse
-        let force = normal.mul(this.stiffness * difference + this.damping * normal.dot(rv)).div(iterations)
-        this.a.applyImpulse(force.neg(), pointA)
-        this.b.applyImpulse(force, pointB)
+        return [normal, difference]
     }
 
-    private correctPositions(normal: Vector2)
+    public resolve(iterations: number)
     {
+        let [pointA, pointB] = this.localPoints
+        let [normal, difference] = this.calculateDifference()
+
+        // Restorative impulse
+        let impulse = normal.mul(this.stiffness * difference).div(iterations)
+        this.a.applyImpulse(impulse.neg(), pointA)
+        this.b.applyImpulse(impulse, pointB)
+
+        // Dampen velocity along normal direction
+        let rv = this.a.velocity.sub(this.b.velocity)
+        let damping = normal.mul(this.damping * normal.dot(rv)).div(iterations)
+
+        this.a.applyImpulse(damping.neg(), pointA)
+        this.b.applyImpulse(damping, pointB)
+    }
+
+    public correctPositions(rate: number)
+    {
+        let [normal, difference] = this.calculateDifference()
+
         let total = this.a.mass + this.b.mass
-        this.a.position = this.a.position.sub(normal.mul(this.a.mass / total))
-        this.b.position = this.b.position.add(normal.mul(this.b.mass / total))
+        let correction = this.stiffness * this.damping * difference / total * rate
+
+        this.a.position = this.a.position.sub(normal.mul(correction * this.a.mass))
+        this.b.position = this.b.position.add(normal.mul(correction * this.b.mass))
     }
 
     public debug(c: CanvasRenderingContext2D)
