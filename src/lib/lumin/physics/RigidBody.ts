@@ -3,7 +3,7 @@ import { Component } from "../Entity"
 import type { Bounds } from "./Shape"
 import type Shape from "./Shape"
 
-export enum BodyType { Static, Dynamic }
+export const enum BodyType { Static, Dynamic }
 export interface BodyParams
 {
 

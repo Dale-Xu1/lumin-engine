@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte"
 
-import LuminEngine, { Scene } from "./lumin/LuminEngine"
+import LuminEngine, { Input, Key, MouseButton, Scene } from "./lumin/LuminEngine"
 import Vector2 from "./lumin/Vector2"
 import RigidBody, { BodyType } from "./lumin/physics/RigidBody"
 import Shape, { Circle, Ray, Rectangle } from "./lumin/physics/Shape"
@@ -9,57 +9,29 @@ import PhysicsEngine from "./lumin/physics/PhysicsEngine"
 import Constraint from "./lumin/physics/Constraint"
 import Entity, { Camera, Component } from "./lumin/Entity"
 
-// TODO: Position/angle constraints
-// TODO: Input manager
+// TODO: Texture system
 // TODO: Scene description file
 // TODO: Particle system
+// TODO: Shaders
 
 class Control extends Component
 {
 
-    private up: boolean = false
-    private down: boolean = false
-    private left: boolean = false
-    private right: boolean = false
-
-    private cw: boolean = false
-    private ccw: boolean = false
-
     private body!: RigidBody<Rectangle>
 
-    public override init()
-    {
-        this.body = this.getComponent(RigidBody)!
-        let event = (value: boolean) => (e: KeyboardEvent) =>
-        {
-            switch (e.code)
-            {
-                case "ArrowUp": this.up = value; break
-                case "ArrowDown": this.down = value; break
-                case "ArrowLeft": this.left = value; break
-                case "ArrowRight": this.right = value; break
-
-                case "KeyX": this.cw = value; break
-                case "KeyZ": this.ccw = value; break
-            }
-        }
-
-        window.addEventListener("keydown", event(true))
-        window.addEventListener("keyup", event(false))
-    }
-
+    public override init() { this.body = this.getComponent(RigidBody)! }
     public override update()
     {
         let offset = Vector2.ZERO
         let angle = 0
 
-        if (this.up) offset = offset.add(Vector2.UP)
-        if (this.down) offset = offset.add(Vector2.DOWN)
-        if (this.left) offset = offset.add(Vector2.LEFT)
-        if (this.right) offset = offset.add(Vector2.RIGHT)
+        if (Input.key(Key.UP)) offset = offset.add(Vector2.UP)
+        if (Input.key(Key.DOWN)) offset = offset.add(Vector2.DOWN)
+        if (Input.key(Key.LEFT)) offset = offset.add(Vector2.LEFT)
+        if (Input.key(Key.RIGHT)) offset = offset.add(Vector2.RIGHT)
 
-        if (this.cw) angle -= 1
-        if (this.ccw) angle += 1
+        if (Input.key(Key.X)) angle -= 1
+        if (Input.key(Key.Z)) angle += 1
 
         this.body.applyForce(offset.normalize().mul(150))
         this.body.applyTorque(angle * 5)
@@ -91,6 +63,41 @@ class Control extends Component
 
 }
 
+class AddBody extends Component
+{
+
+    private down: boolean = false
+
+    public override init()
+    {
+        for (let i = 0; i < 30; i++)
+        {
+            let shape = Math.random() < 0.5 ?
+                new Circle(Math.random() * 0.4 + 0.2) :
+                new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
+            scene.addEntity(new Entity(new Vector2(Math.random() * 2 - 1, 0), Math.random() * 2 * Math.PI, [new RigidBody(shape)]))
+        }
+    }
+
+    public override update()
+    {
+        let previous = this.down
+        this.down = Input.button[MouseButton.LEFT]
+
+        if (this.down && !previous)
+        {
+            let position = scene.toWorldSpace(Input.mouse)
+            if (scene.physics.testPoint(position).length > 0) return
+
+            let shape = Math.random() < 0.5 ?
+                new Circle(Math.random() * 0.4 + 0.2) :
+                new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
+            scene.addEntity(new Entity(position, Math.random() * 2 * Math.PI, [new RigidBody(shape)]))
+        }
+    }
+
+}
+
 let canvas: HTMLCanvasElement
 let scene: Scene
 
@@ -101,24 +108,7 @@ onMount(() =>
     let camera = new Entity(Vector2.ZERO, 0, [new Camera(canvas, width, height)])
     scene = new Scene(camera, new PhysicsEngine())
 
-    window.addEventListener("mousedown", e =>
-    {
-        let position = scene.toWorldSpace(new Vector2(e.clientX, e.clientY))
-        if (scene.physics.testPoint(position).length > 0) return
-
-        let shape = Math.random() < 0.5 ?
-            new Circle(Math.random() * 0.4 + 0.2) :
-            new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
-        scene.addEntity(new Entity(position, Math.random() * 2 * Math.PI, [new RigidBody(shape)]))
-    })
-
-    for (let i = 0; i < 30; i++)
-    {
-        let shape = Math.random() < 0.5 ?
-            new Circle(Math.random() * 0.4 + 0.2) :
-            new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
-        scene.addEntity(new Entity(new Vector2(Math.random() * 2 - 1, 0), Math.random() * 2 * Math.PI, [new RigidBody(shape)]))
-    }
+    scene.addEntity(new Entity(Vector2.ZERO, 0, [new AddBody()]))
 
     scene.addEntity(new Entity(new Vector2(0, -8), 0, [new RigidBody(new Rectangle(24, 1), { type: BodyType.Static })]))
     scene.addEntity(new Entity(new Vector2(-12, 0), 0, [new RigidBody(new Rectangle(1, 16), { type: BodyType.Static })]))
