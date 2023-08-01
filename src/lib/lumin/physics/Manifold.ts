@@ -31,40 +31,6 @@ export default class Manifold
 
 
     public resolve() { for (let contact of this.contacts) this.applyImpulse(contact) }
-    public correctPositions(rate: number)
-    {
-        // Calculate updated penetration
-        let separation = this.b.position.sub(this.a.position).dot(this.normal) - this.separation
-        let penetration = this.penetration - separation
-        if (penetration < SLOP) return
-
-        // Distribute correction based on masses
-        let total = this.a.mass + this.b.mass
-        let correction = Math.max(penetration - SLOP, 0) / total * rate
-
-        this.a.position = this.a.position.sub(this.normal.mul(correction * this.a.mass))
-        this.b.position = this.b.position.add(this.normal.mul(correction * this.b.mass))
-    }
-
-    private calculateContact(start: Vector2): [Vector2, Vector2]
-    {
-        let end = start.add(this.normal.mul(this.penetration))
-        let total = this.a.mass + this.b.mass
-
-        // Calculate contact point based on masses
-        let r2 = start.mul(this.b.mass / total).add(end.mul(this.a.mass / total))
-        let r1 = r2.add(this.b.position.sub(this.a.position))
-
-        return [r1, r2]
-    }
-
-    private relativeVelocity(r1: Vector2, r2: Vector2): Vector2
-    {
-        let v1 = this.a.velocity.add(new Vector2(-r1.y * this.a.rotation, r1.x * this.a.rotation))
-        let v2 = this.b.velocity.add(new Vector2(-r2.y * this.b.rotation, r2.x * this.b.rotation))
-        return v2.sub(v1)
-    }
-
     private applyImpulse(start: Vector2)
     {
         if (this.penetration < SLOP) return
@@ -104,6 +70,40 @@ export default class Manifold
 
         this.a.applyImpulse(tangentImpulse.neg(), r1)
         this.b.applyImpulse(tangentImpulse, r2)
+    }
+    
+    private calculateContact(start: Vector2): [Vector2, Vector2]
+    {
+        let end = start.add(this.normal.mul(this.penetration))
+        let total = this.a.mass + this.b.mass
+
+        // Calculate contact point based on masses
+        let r2 = start.mul(this.b.mass / total).add(end.mul(this.a.mass / total))
+        let r1 = r2.add(this.b.position.sub(this.a.position))
+
+        return [r1, r2]
+    }
+
+    private relativeVelocity(r1: Vector2, r2: Vector2): Vector2
+    {
+        let v1 = this.a.velocity.add(new Vector2(-r1.y * this.a.rotation, r1.x * this.a.rotation))
+        let v2 = this.b.velocity.add(new Vector2(-r2.y * this.b.rotation, r2.x * this.b.rotation))
+        return v2.sub(v1)
+    }
+
+    public correctPositions(rate: number)
+    {
+        // Calculate updated penetration
+        let separation = this.b.position.sub(this.a.position).dot(this.normal) - this.separation
+        let penetration = this.penetration - separation
+        if (penetration < SLOP) return
+
+        // Distribute correction based on masses
+        let total = this.a.mass + this.b.mass
+        let correction = Math.max(penetration - SLOP, 0) / total * rate
+
+        this.a.position = this.a.position.sub(this.normal.mul(correction * this.a.mass))
+        this.b.position = this.b.position.add(this.normal.mul(correction * this.b.mass))
     }
 
 

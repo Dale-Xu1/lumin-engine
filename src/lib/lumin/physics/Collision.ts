@@ -111,7 +111,7 @@ namespace Collision
         let [i1, i2] = findIncident(b, normal)
 
         // Clip incident face onto reference face
-        let right = new Vector2(normal.y, -normal.x)
+        let right = normal.perpendicular()
         let left = right.neg();
 
         [i1, i2] = clip(r2, left, i1, i2), [i2, i1] = clip(r1, right, i2, i1)

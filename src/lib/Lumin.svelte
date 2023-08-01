@@ -9,9 +9,9 @@ import PhysicsEngine from "./lumin/physics/PhysicsEngine"
 import Constraint from "./lumin/physics/Constraint"
 import Entity, { Camera, Component } from "./lumin/Entity"
 
-// TODO: Contact caching?
-// TODO: Collision events
-// TODO: Sensors (bodies that detect collision but don't respond)
+// TODO: Contact caching
+
+// TODO: UI system
 // TODO: Texture system
 // TODO: Scene description file
 // TODO: Particle system
@@ -108,6 +108,7 @@ onMount(() =>
 
     scene.addEntity(new Entity(Vector2.ZERO, 0, [new AddBody()]))
 
+    scene.addEntity(new Entity(new Vector2(0, 8), 0, [new RigidBody(new Rectangle(24, 1), { type: BodyType.Static })]))
     scene.addEntity(new Entity(new Vector2(0, -8), 0, [new RigidBody(new Rectangle(24, 1), { type: BodyType.Static })]))
     scene.addEntity(new Entity(new Vector2(-12, 0), 0, [new RigidBody(new Rectangle(1, 16), { type: BodyType.Static })]))
     scene.addEntity(new Entity(new Vector2(12, 0), 0, [new RigidBody(new Rectangle(1, 16), { type: BodyType.Static })]))
@@ -123,23 +124,22 @@ onMount(() =>
     scene.addEntity(new Entity(new Vector2(-3, 4), 0, [c, new Constraint(2, c, d)]))
     scene.addEntity(new Entity(new Vector2(-3, 2), 0, [d, new Constraint(2, d, a)]))
 
-    let start = new RigidBody(new Rectangle(0.5, 0.5, 5), { type: BodyType.Static })
+    let start = new RigidBody(new Rectangle(0.5, 0.5, 20), { type: BodyType.Static })
 
     let chain: RigidBody<Shape>[] = []
-    for (let i = 0; i < 12; i++)
+    for (let i = 0; i < 8; i++)
     {
-        let body = new RigidBody(new Rectangle(0.2, 0.5, 5))
+        let body = new RigidBody(new Rectangle(0.2, 0.5))
         chain.push(body)
     }
 
     let y = 4
-    scene.addEntity(new Entity(new Vector2(4, y), 0, [start, new Constraint(0.5, start, chain[0], { pointA: Vector2.ZERO, pointB: Vector2.UP.mul(0.15), damping: 0.01 })]))
+    scene.addEntity(new Entity(new Vector2(4, y), 0, [start, new Constraint(0.5, start, chain[0], { pointA: Vector2.ZERO, pointB: Vector2.UP.mul(0.15) })]))
     for (let i = 0; i < chain.length - 1; i++)
     {
-        let a = chain[i]
-        let b = chain[i + 1]
-
+        let a = chain[i], b = chain[i + 1]
         y -= 0.6
+
         scene.addEntity(new Entity(new Vector2(4, y), 0, [a, new Constraint(0.25, a, b, { pointA: Vector2.DOWN.mul(0.15), pointB: Vector2.UP.mul(0.15) })]))
     }
     scene.addEntity(new Entity(new Vector2(4, y - 0.6), 0, [chain[chain.length - 1]]))

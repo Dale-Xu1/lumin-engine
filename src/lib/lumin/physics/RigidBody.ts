@@ -109,8 +109,18 @@ export default class RigidBody<T extends Shape> extends Component
         this.previousPosition = this.position
         this.previousAngle = this.angle
 
-        if (this.type === BodyType.Static) return void this.shape.update(this)
+        if (this.type === BodyType.Dynamic) this.dynamicUpdate(delta, gravity)
+        else this.staticUpdate()
 
+        // Clear forces
+        this.force = Vector2.ZERO
+        this.torque = 0
+
+        this.shape.update(this)
+    }
+
+    private dynamicUpdate(delta: number, gravity: Vector2)
+    {
         // Calculate acceleration
         let acceleration = this.force.mul(this.mass).add(gravity.mul(this.gravityScale))
 
@@ -121,12 +131,12 @@ export default class RigidBody<T extends Shape> extends Component
         // Integrate angle
         this.rotation += this.torque * this.inertia * delta
         this.angle += this.rotation * delta
+    }
 
-        this.shape.update(this)
-
-        // Clear forces
-        this.force = Vector2.ZERO
-        this.torque = 0
+    private staticUpdate()
+    {
+        this.position = this.entity.position
+        this.angle = this.entity.angle
     }
 
     public getBounds(): Bounds { return this.shape.getBounds(this) }
@@ -134,6 +144,8 @@ export default class RigidBody<T extends Shape> extends Component
     private lerp(a: number, b: number, t: number): number { return a + (b - a) * t }
     public preRender(alpha: number)
     {
+        if (this.type === BodyType.Static) return
+        
         // Interpolate position
         this.entity.position = Vector2.lerp(this.previousPosition, this.position, alpha)
         this.entity.angle = this.lerp(this.previousAngle, this.angle, alpha)

@@ -91,7 +91,7 @@ export class Polygon extends Shape
 
             // Get perpendicular vector
             let direction = b.sub(a)
-            let normal = new Vector2(direction.y, -direction.x).normalize()
+            let normal = direction.perpendicular().normalize()
             this.normals[i] = normal
 
             // Test if polygon is concave

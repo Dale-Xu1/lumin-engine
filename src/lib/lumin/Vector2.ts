@@ -46,6 +46,7 @@ export default class Vector2
         return this.div(this.length)
     }
 
+    public perpendicular(): Vector2 { return new Vector2(this.y, -this.x) }
     public rotate(a: number): Vector2
     {
         return new Vector2(

@@ -9,9 +9,6 @@ export interface ConstraintParams
     pointA?: Vector2
     pointB?: Vector2
 
-    stiffness?: number
-    damping?: number
-
 }
 
 export default class Constraint extends Component
@@ -20,22 +17,15 @@ export default class Constraint extends Component
     public readonly pointA: Vector2
     public readonly pointB: Vector2
 
-    public stiffness: number
-    public damping: number
-
     public constructor(public readonly length: number, public readonly a: RigidBody<Shape>, public readonly b: RigidBody<Shape>,
     {
         pointA = Vector2.ZERO,
-        pointB = Vector2.ZERO,
-        stiffness = 1, damping = 1
+        pointB = Vector2.ZERO
     }: ConstraintParams = {})
     {
         super()
         this.pointA = pointA
         this.pointB = pointB
-
-        this.stiffness = stiffness
-        this.damping = damping
     }
 
     public override init() { this.scene.physics.constraints.push(this) }
@@ -46,41 +36,41 @@ export default class Constraint extends Component
         return [this.pointA.rotate(this.a.angle), this.pointB.rotate(this.b.angle)]
     }
 
-    private calculateDifference(): [Vector2, number]
+    private calculateDelta(): Vector2
     {
         let [pointA, pointB] = this.localPoints
         let delta = this.a.position.add(pointA).sub(this.b.position.add(pointB))
-        let normal = delta.normalize()
 
-        let difference = delta.length - this.length
-        return [normal, difference]
+        return delta
     }
 
-    public resolve(iterations: number)
+    public resolve()
     {
         let [pointA, pointB] = this.localPoints
-        let [normal, difference] = this.calculateDifference()
+        let normal = this.calculateDelta().normalize()
 
-        // Restorative impulse
-        let impulse = normal.mul(this.stiffness * difference).div(iterations)
+        let rn = pointA.cross(normal) ** 2 * this.a.inertia + pointB.cross(normal) ** 2 * this.b.inertia
+        let share = 1 / (this.a.mass + this.b.mass + rn)
+
+        let v1 = this.a.velocity.add(new Vector2(-pointA.y * this.a.rotation, pointA.x * this.a.rotation))
+        let v2 = this.b.velocity.add(new Vector2(-pointB.y * this.b.rotation, pointB.x * this.b.rotation))
+        let normalVelocity = v2.sub(v1).dot(normal)
+
+        let j = -normalVelocity * share * 0.5
+        let impulse = normal.mul(j)
+
         this.a.applyImpulse(impulse.neg(), pointA)
         this.b.applyImpulse(impulse, pointB)
-
-        // Dampen velocity along normal direction
-        let rv = this.a.velocity.sub(this.b.velocity)
-        let damping = normal.mul(this.damping * normal.dot(rv)).div(iterations)
-
-        this.a.applyImpulse(damping.neg(), pointA)
-        this.b.applyImpulse(damping, pointB)
     }
 
     public correctPositions(rate: number)
     {
-        let [normal, difference] = this.calculateDifference()
+        let delta = this.calculateDelta()
 
         let total = this.a.mass + this.b.mass
-        let correction = this.stiffness * this.damping * difference / total * rate
+        let correction = (delta.length - this.length) / total * rate
 
+        let normal = delta.normalize()
         this.a.position = this.a.position.sub(normal.mul(correction * this.a.mass))
         this.b.position = this.b.position.add(normal.mul(correction * this.b.mass))
     }
