@@ -15,23 +15,17 @@ declare global
     }
 }
 
-export default class LuminEngine
+export class Engine
 {
 
-    private readonly stack: Scene[] = []
-    private get scene(): Scene { return this.stack[this.stack.length - 1] }
+    public scene: Scene | null = null
 
-    public constructor(scene: Scene, private readonly delta: number = 0.02)
+    public constructor(private readonly delta: number = 0.02)
     {
-        this.enter(scene)
-
         this.delta = delta
         this.frame = this.frame.bind(this)
     }
 
-
-    public enter(scene: Scene) { this.stack.push(scene) }
-    public exit(): Scene { return this.stack.pop()! }
 
     private previous!: number
     private accumulated: number = 0
@@ -42,7 +36,7 @@ export default class LuminEngine
         this.timer = window.requestAnimationFrame(now =>
         {
             this.previous = now
-            this.scene.update(this.delta)
+            this.scene?.update(this.delta)
 
             this.frame(now)
         })
@@ -62,15 +56,42 @@ export default class LuminEngine
         while (this.accumulated > delay)
         {
             this.accumulated -= delay
-            if (this.scene !== null) this.scene.update(this.delta)
+            this.scene?.update(this.delta)
         }
 
         // Calculate alpha for interpolation
         let alpha = this.accumulated / delay
-        if (this.scene !== null) this.scene.render(alpha)
+        this.scene?.render(alpha)
     }
 
 }
+
+namespace Lumin
+{
+
+    export let engine: Engine = new Engine()
+    export let camera: Camera
+
+    let stack: Scene[] = []
+    function current() { return stack[stack.length - 1] ?? null }
+
+    export function enter(scene: Scene)
+    {
+        stack.push(scene)
+        engine.scene = scene
+    }
+
+    export function exit(): Scene | null
+    {
+        let scene = stack.pop() ?? null
+        engine.scene = current()
+
+        return scene
+    }
+
+
+}
+export default Lumin
 
 export class Scene
 {

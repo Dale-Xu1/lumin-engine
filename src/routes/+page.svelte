@@ -1,9 +1,9 @@
 <script lang="ts">
-import Lumin from "../lib/Lumin.svelte"
+import Main from "../lib/Main.svelte"
 
 </script>
 
-<Lumin />
+<Main />
 <style>
 :global(*)
 {
