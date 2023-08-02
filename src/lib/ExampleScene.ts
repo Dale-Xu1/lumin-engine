@@ -65,15 +65,6 @@ class Control extends Component
 class AddBody extends Component
 {
 
-    public override init()
-    {
-        for (let i = 0; i < 50; i++)
-        {
-            let shape = Math.random() < 0.5 ? new Circle(Math.random() * 0.4 + 0.2) : new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
-            this.scene.addEntity(new Entity(new Vector2(Math.random() * 2 - 1, 0), Math.random() * 2 * Math.PI, [new RigidBody(shape)]))
-        }
-    }
-
     private down: boolean = false
     public override update()
     {
@@ -102,6 +93,12 @@ export default class ExampleScene extends Scene
 
         this.addEntity(new Entity(Vector2.ZERO, 0, [new AddBody()]))
 
+        for (let i = 0; i < 50; i++)
+        {
+            let shape = Math.random() < 0.5 ? new Circle(Math.random() * 0.4 + 0.2) : new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
+            this.addEntity(new Entity(new Vector2(Math.random() * 2 - 1, 0), Math.random() * 2 * Math.PI, [new RigidBody(shape)]))
+        }
+
         this.addEntity(new Entity(new Vector2(0, 8), 0, [new RigidBody(new Rectangle(24, 1), { type: BodyType.Static })]))
         this.addEntity(new Entity(new Vector2(0, -8), 0, [new RigidBody(new Rectangle(24, 1), { type: BodyType.Static })]))
         this.addEntity(new Entity(new Vector2(-12, 0), 0, [new RigidBody(new Rectangle(1, 16), { type: BodyType.Static })]))
@@ -118,8 +115,7 @@ export default class ExampleScene extends Scene
         this.addEntity(new Entity(new Vector2(-3, 4), 0, [c, new Constraint(2, c, d)]))
         this.addEntity(new Entity(new Vector2(-3, 2), 0, [d, new Constraint(2, d, a)]))
 
-        let start = new RigidBody(new Rectangle(0.5, 0.5, 20), { type: BodyType.Static })
-
+        let start = new RigidBody(new Rectangle(0.5, 0.5), { type: BodyType.Static })
         let chain: RigidBody<Shape>[] = []
         for (let i = 0; i < 8; i++)
         {

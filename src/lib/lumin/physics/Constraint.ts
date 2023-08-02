@@ -56,7 +56,7 @@ export default class Constraint extends Component
         let v2 = this.b.velocity.add(new Vector2(-pointB.y * this.b.rotation, pointB.x * this.b.rotation))
         let normalVelocity = v2.sub(v1).dot(normal)
 
-        let j = -normalVelocity * share * 0.5
+        let j = -normalVelocity * share
         let impulse = normal.mul(j)
 
         this.a.applyImpulse(impulse.neg(), pointA)
