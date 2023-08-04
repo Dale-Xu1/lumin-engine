@@ -2,7 +2,7 @@
 import { onMount } from "svelte"
 
 import Device, { ComputePipeline, RenderPipeline, Shader, VertexFormat } from "../lumin/render/Device"
-import { Buffer, Texture } from "../lumin/render/Resource"
+import { Buffer, Texture, TextureFormat } from "../lumin/render/Resource"
 
 import renderCode from "./render.wgsl?raw"
 import computeCode from "./compute.wgsl?raw"
@@ -19,35 +19,28 @@ onMount(async () =>
     let vertices = new Buffer(device, GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST, 12)
     vertices.write(new Float32Array(
     [
-       -1, -1,
-        1, -1,
-        1,  1,
-
-       -1, -1,
-        1,  1,
-       -1,  1
-    ]))
+        [-1, -1], [1, -1], [ 1, 1],
+        [-1, -1], [1,  1], [-1, 1]
+    ].flat()))
 
     const SCALE = 5
     const GRID_WIDTH = Math.floor(window.innerWidth / SCALE), GRID_HEIGHT = Math.floor(window.innerHeight / SCALE)
 
     let gridSize = new Buffer(device, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, 2)
-    gridSize.write(new Float32Array([GRID_WIDTH, GRID_HEIGHT]))
+    gridSize.write(new Uint32Array([GRID_WIDTH, GRID_HEIGHT]))
 
-    // TODO: Rewrite to use textures
     let length = GRID_WIDTH * GRID_HEIGHT
-    let state = new Buffer(device, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST, length)
-    let temp = new Buffer(device, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC, length)
-
-    // let test = new Texture(device, TextureFormat.R_U8, GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-    //     [GRID_WIDTH, GRID_HEIGHT])
+    let state = new Texture(device, TextureFormat.R_U32, GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+        [GRID_WIDTH, GRID_HEIGHT])
+    let temp = new Texture(device, TextureFormat.R_U32, GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_SRC,
+        [GRID_WIDTH, GRID_HEIGHT])
 
     let stateData = new Uint32Array(length)
     for (let i = 0; i < stateData.length; i++) stateData[i] = Math.random() > 0.6 ? 1 : 0
     state.write(stateData)
 
     let render = new RenderPipeline(device, new Shader(device, renderCode), "vertex", "fragment",
-        [[0, vertices, VertexFormat.F32_2]])
+        device.texture.format, [[0, vertices, VertexFormat.F32_2]])
     render.bind(0, [[0, gridSize], [1, state]])
 
     let compute = new ComputePipeline(device, new Shader(device, computeCode), "main")
@@ -59,7 +52,7 @@ onMount(async () =>
         window.requestAnimationFrame(update)
         compute.dispatch(Math.ceil(GRID_WIDTH / 8), Math.ceil(GRID_HEIGHT / 8))
 
-        device.copyBuffer(temp, state)
+        device.copyTexture(temp, state)
         render.render(device.texture, 6, length)
 
         device.flush()

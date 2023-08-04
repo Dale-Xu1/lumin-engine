@@ -4,8 +4,8 @@ import Main from "../lib/Main.svelte"
 
 </script>
 
-<Main />
-<!-- <Renderer /> -->
+<!-- <Main /> -->
+<Renderer />
 <style>
 :global(*)
 {

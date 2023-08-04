@@ -7,20 +7,20 @@ struct VertexInput
 struct VertexOutput
 {
     @builtin(position) pos: vec4f,
-    @location(0) cell: vec2f
+    @location(0) @interpolate(flat) cell: vec2u
 }
 
-@group(0) @binding(0) var<uniform> grid: vec2f;
-@group(0) @binding(1) var<storage> state: array<u32>;
+@group(0) @binding(0) var<uniform> grid: vec2u;
+@group(0) @binding(1) var state: texture_2d<u32>;
 
 @vertex
 fn vertex(input: VertexInput) -> VertexOutput
 {
-    let i = f32(input.instance);
-    let cell = vec2f(i % grid.x, floor(i / grid.x));
-    let state = f32(state[input.instance]);
+    let cell = vec2u(input.instance % grid.x, input.instance / grid.x);
+    let state = vec2f(textureLoad(state, cell, 0).xx);
 
-    let p = (input.pos * state + 1) / grid - 1 + cell / grid * 2;
+    let g = vec2f(grid);
+    let p = (input.pos * state + 1) / g - 1 + vec2f(cell) / g * 2;
 
     var output: VertexOutput;
     output.pos =  vec4f(p, 0, 1);
@@ -32,6 +32,6 @@ fn vertex(input: VertexInput) -> VertexOutput
 @fragment
 fn fragment(input: VertexOutput) -> @location(0) vec4f
 {
-    let c = input.cell / grid;
+    let c = vec2f(input.cell) / vec2f(grid);
     return vec4f(c, 1 - c.x, 1);
 }

@@ -1,16 +1,20 @@
 import type Resource from "./Resource"
-import { Buffer, Texture } from "./Resource"
+import { Buffer, Texture, TextureFormat } from "./Resource"
 
 export default class Device
 {
 
     public static async init(canvas: HTMLCanvasElement): Promise<Device>
     {
-        let adapter = await navigator.gpu.requestAdapter()
-        let device = await adapter!.requestDevice()
+        let adapter = await window.navigator.gpu.requestAdapter()
+        if (adapter === null) throw new Error("No GPU adapter found")
 
-        let context = canvas.getContext("webgpu")!
-        let format = navigator.gpu.getPreferredCanvasFormat()
+        let device = await adapter.requestDevice()
+
+        let context = canvas.getContext("webgpu")
+        if (context === null) throw new Error("HTML canvas does not support WebGPU")
+
+        let format = window.navigator.gpu.getPreferredCanvasFormat()
         context.configure({ device: device, format })
 
         return new Device(device, context)
@@ -117,7 +121,7 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
     private readonly buffers: [number, Buffer][] = []
 
     public constructor(device: Device, shader: Shader, vertex: string, fragment: string,
-        buffers: [number, Buffer, VertexFormat, StepMode?][])
+        format: TextureFormat, buffers: [number, Buffer, VertexFormat, StepMode?][])
     {
         let entries: GPUVertexBufferLayout[] = []
         for (let [location, _, format, step = StepMode.VERTEX] of buffers)
@@ -146,7 +150,7 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
             {
                 module: shader.module,
                 entryPoint: fragment,
-                targets: [{ format: device.texture.format }]
+                targets: [{ format }]
             }
         }))
 
