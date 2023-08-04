@@ -2,6 +2,10 @@
     "cSpell.words": [
         "AABB",
         "lerp",
-        "Lumin"
+        "Lumin",
+        "UNORM",
+        "webgpu",
+        "wgsl",
+        "Workgroups"
     ]
 }

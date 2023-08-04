@@ -7,12 +7,10 @@ import Lumin from "./lumin/Lumin"
 import ExampleScene from "./ExampleScene"
 
 let canvas: HTMLCanvasElement
-let camera: Camera
-
 onMount(() =>
 {
     let width = window.innerWidth, height = window.innerHeight
-    Lumin.camera = camera = new Camera(canvas, width, height)
+    Lumin.camera = new Camera(canvas, width, height)
 
     Lumin.enter(new ExampleScene())
     Lumin.engine.start()
@@ -21,7 +19,7 @@ onMount(() =>
 function onResize()
 {
     let width = window.innerWidth, height = window.innerHeight
-    camera.resize(width, height)
+    Lumin.camera.resize(width, height)
 }
 
 </script>

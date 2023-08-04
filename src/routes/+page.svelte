@@ -1,9 +1,11 @@
 <script lang="ts">
+import Renderer from "../lib/test/Renderer.svelte"
 import Main from "../lib/Main.svelte"
 
 </script>
 
 <Main />
+<!-- <Renderer /> -->
 <style>
 :global(*)
 {

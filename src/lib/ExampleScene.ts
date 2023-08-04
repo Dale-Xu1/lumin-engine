@@ -8,10 +8,8 @@ import Entity, { Component } from "./lumin/Entity"
 import Lumin from "./lumin/Lumin"
 
 // TODO: UI system
-// TODO: Texture system
 // TODO: Scene description file
 // TODO: Particle system
-// TODO: Shaders
 
 class Control extends Component
 {
