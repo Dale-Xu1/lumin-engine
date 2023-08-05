@@ -1,6 +1,11 @@
 import type Device from "./Device"
 
-export default interface Resource { }
+export default interface Resource
+{
+
+    getBinding(): GPUBindingResource
+
+}
 
 type BufferData = Int32Array | Uint32Array | Float32Array
 export class Buffer implements Resource
@@ -36,6 +41,8 @@ export class Buffer implements Resource
     {
         this.device.queue.writeBuffer(this.buffer, offset, data)
     }
+
+    public getBinding(): GPUBindingResource { return { buffer: this.buffer } }
 
 }
 
@@ -125,5 +132,7 @@ export class Texture implements Resource
         let width = this.size[0] * Texture.getBytes(this.format)
         this.device.queue.writeTexture({ texture: this.texture }, data, { bytesPerRow: width }, this.size)
     }
+
+    public getBinding(): GPUBindingResource { return this.view }
 
 }

@@ -74,15 +74,7 @@ abstract class Pipeline<T extends GPUPipelineBase>
         let device = this.device.device
 
         let entries: GPUBindGroupEntry[] = []
-        for (let [binding, resource] of bindings)
-        {
-            let r!: GPUBindingResource
-
-            if (resource instanceof Buffer) r = { buffer: resource.buffer }
-            else if (resource instanceof Texture) r = resource.view
-
-            entries.push({ binding, resource: r })
-        }
+        for (let [binding, resource] of bindings) entries.push({ binding, resource: resource.getBinding() })
 
         let layout = this.pipeline.getBindGroupLayout(group)
         this.bindings.push([group, device.createBindGroup({ layout, entries })])
