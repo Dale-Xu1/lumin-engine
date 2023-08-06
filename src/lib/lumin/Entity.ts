@@ -1,4 +1,4 @@
-import type { Vector2 } from "./Math"
+import type { Vector3 } from "./Math"
 import type { Scene } from "./Engine"
 
 interface Constructor<T> { new(...args: any[]): T }
@@ -8,7 +8,7 @@ export default class Entity
 
     public scene!: Scene
 
-    public constructor(public position: Vector2, public angle: number, public readonly components: Component[])
+    public constructor(public position: Vector3, public angle: number, public readonly components: Component[])
     {
         // Register components to this entity
         for (let component of components) component.entity = this
@@ -71,7 +71,7 @@ export class Camera extends Component
     public readonly canvas: HTMLCanvasElement
     public readonly context: CanvasRenderingContext2D
 
-    public get position(): Vector2 { return this.entity.position }
+    public get position(): Vector3 { return this.entity.position }
     public get angle(): number { return this.entity.angle }
 
     public width!: number

@@ -1,12 +1,12 @@
 export class Vector2
 {
 
-    public static readonly ZERO: Vector2 = new Vector2(0, 0)
+    public static readonly ZERO:  Vector2 = new Vector2( 0,  0)
 
-    public static readonly UP: Vector2 = new Vector2(0, 1)
-    public static readonly DOWN: Vector2 = new Vector2(0, -1)
-    public static readonly LEFT: Vector2 = new Vector2(-1, 0)
-    public static readonly RIGHT: Vector2 = new Vector2(1, 0)
+    public static readonly UP:    Vector2 = new Vector2( 0,  1)
+    public static readonly DOWN:  Vector2 = new Vector2( 0, -1)
+    public static readonly LEFT:  Vector2 = new Vector2(-1,  0)
+    public static readonly RIGHT: Vector2 = new Vector2( 1,  0)
 
     public static lerp(a: Vector2, b: Vector2, t: number): Vector2 { return a.add(b.sub(a).mul(t)) }
 
@@ -42,18 +42,21 @@ export class Vector2
     }
 
     public perpendicular(): Vector2 { return new Vector2(this.y, -this.x) }
+    public cast(z: number = 0): Vector3 { return new Vector3(this.x, this.y, z) }
 
 }
 
 export class Vector3
 {
 
-    public static readonly ZERO: Vector3 = new Vector3(0, 0, 0)
+    public static readonly ZERO:    Vector3 = new Vector3( 0,  0,  0)
 
-    public static readonly UP: Vector3 = new Vector3(0, 1, 0)
-    public static readonly DOWN: Vector3 = new Vector3(0, -1, 0)
-    public static readonly LEFT: Vector3 = new Vector3(-1, 0, 0)
-    public static readonly RIGHT: Vector3 = new Vector3(1, 0, 0)
+    public static readonly UP:      Vector3 = new Vector3( 0,  1,  0)
+    public static readonly DOWN:    Vector3 = new Vector3( 0, -1,  0)
+    public static readonly LEFT:    Vector3 = new Vector3(-1,  0,  0)
+    public static readonly RIGHT:   Vector3 = new Vector3( 1,  0,  0)
+    public static readonly FORWARD: Vector3 = new Vector3( 0,  0,  1)
+    public static readonly BACK:    Vector3 = new Vector3( 0,  0, -1)
 
     public static lerp(a: Vector3, b: Vector3, t: number): Vector3 { return a.add(b.sub(a).mul(t)) }
 
@@ -92,13 +95,15 @@ export class Vector3
         return this.div(this.length)
     }
 
+    public cast(): Vector2 { return new Vector2(this.x, this.y) }
+
 }
 
 export class Matrix2
 {
 
-    public static ZERO = new Matrix2(0, 0, 0, 0)
-    public static IDENTITY = new Matrix2(1, 0, 0, 1)
+    public static ZERO:     Matrix2 = new Matrix2(0, 0, 0, 0)
+    public static IDENTITY: Matrix2 = new Matrix2(1, 0, 0, 1)
 
     public static rotate(angle: number): Matrix2
     {

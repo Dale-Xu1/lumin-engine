@@ -4,10 +4,7 @@ import { Buffer, Texture, TextureFormat } from "./Resource"
 import renderCode from "./shaders/render.wgsl?raw"
 import computeCode from "./shaders/compute.wgsl?raw"
 
-import { Matrix2, Vector2 } from "../Math"
-
 // TODO: Entity parenting
-// TODO: Vector3, Matrix2, Matrix3
 // TODO: Deferred rendering and depth buffer
 
 export default class RenderEngine

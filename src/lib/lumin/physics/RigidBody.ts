@@ -79,7 +79,7 @@ export default class RigidBody<T extends Shape> extends Component
 
     public override init()
     {
-        this.previousPosition = this.position = this.entity.position
+        this.previousPosition = this.position = this.entity.position.cast()
         this.previousAngle = this.angle = this.entity.angle
 
         this.scene.physics.bodies.push(this)
@@ -135,7 +135,7 @@ export default class RigidBody<T extends Shape> extends Component
 
     private staticUpdate()
     {
-        this.position = this.entity.position
+        this.position = this.entity.position.cast()
         this.angle = this.entity.angle
     }
 
@@ -147,7 +147,9 @@ export default class RigidBody<T extends Shape> extends Component
         if (this.type === BodyType.Static) return
         
         // Interpolate position
-        this.entity.position = Vector2.lerp(this.previousPosition, this.position, alpha)
+        let position = Vector2.lerp(this.previousPosition, this.position, alpha)
+ 
+        this.entity.position = position.cast(this.entity.position.z)
         this.entity.angle = this.lerp(this.previousAngle, this.angle, alpha)
     }
 
