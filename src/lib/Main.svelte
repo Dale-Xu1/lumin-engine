@@ -3,6 +3,7 @@ import { onMount } from "svelte"
 
 import * as Lumin from "./lumin/Lumin"
 import ExampleScene from "./ExampleScene"
+import RenderEngine from "./lumin/render/RenderEngine"
 
 let canvas: HTMLCanvasElement
 onMount(() =>
@@ -12,6 +13,11 @@ onMount(() =>
 
     Lumin.enter(new ExampleScene())
     Lumin.engine.start()
+
+    // let ratio = window.devicePixelRatio
+    // canvas.width = width * ratio
+    // canvas.height = height * ratio
+    // let renderer = new RenderEngine(canvas)
 })
 
 function onResize()

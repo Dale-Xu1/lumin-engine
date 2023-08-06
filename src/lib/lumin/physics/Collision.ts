@@ -107,7 +107,7 @@ namespace Collision
         let normal = normals[i]
         let offset = a.position.sub(b.position)
 
-        let [r1, r2] = Vector2.pair(vertices, i).map(v => v.add(offset))
+        let [r1, r2] = Polygon.pair(vertices, i).map(v => v.add(offset))
         let [i1, i2] = findIncident(b, normal)
 
         // Clip incident face onto reference face
@@ -185,7 +185,7 @@ namespace Collision
             }
         }
 
-        return Vector2.pair(b.shape.transform.vertices, index)
+        return Polygon.pair(b.shape.transform.vertices, index)
     }
 
     function clip(vertex: Vector2, direction: Vector2, i1: Vector2, i2: Vector2): [Vector2, Vector2]
@@ -214,7 +214,7 @@ namespace Collision
         let radius = b.shape.radius
         let center = b.position.sub(a.position)
 
-        let [right, left] = Vector2.pair(vertices, i).map(v => center.sub(v))
+        let [right, left] = Polygon.pair(vertices, i).map(v => center.sub(v))
 
         // Test if circle is in corner regions
         let normal = normals[i]
@@ -353,7 +353,7 @@ namespace Collision
         let index!: number, min = Infinity
         for (let i = 0; i < vertices.length; i++)
         {
-            let [a, b] = Vector2.pair(vertices, i)
+            let [a, b] = Polygon.pair(vertices, i)
 
             let v1 = ray.position.sub(a)
             let v2 = b.sub(a)

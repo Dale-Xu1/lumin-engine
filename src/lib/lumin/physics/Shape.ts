@@ -1,4 +1,4 @@
-import { Vector2 } from "../Math"
+import { Matrix2, Vector2 } from "../Math"
 import type RigidBody from "./RigidBody"
 
 export default abstract class Shape
@@ -76,6 +76,11 @@ export class TransformedPolygon
 export class Polygon extends Shape
 {
 
+    public static pair(array: Vector2[], i: number): [Vector2, Vector2]
+    {
+        return [array[i], array[(i + 1) % array.length]]
+    }
+
     public readonly normals: Vector2[] = []
     public transform!: TransformedPolygon
 
@@ -87,7 +92,7 @@ export class Polygon extends Shape
         this.vertices = vertices
         for (let i = 0; i < vertices.length; i++)
         {
-            let [a, b] = Vector2.pair(vertices, i)
+            let [a, b] = Polygon.pair(vertices, i)
 
             // Get perpendicular vector
             let direction = b.sub(a)
@@ -108,7 +113,7 @@ export class Polygon extends Shape
 
         for (let i = 0; i < this.vertices.length; i++)
         {
-            let [a, b] = Vector2.pair(this.vertices, i)
+            let [a, b] = Polygon.pair(this.vertices, i)
 
             // Split polygon into triangles made of origin and two vertices
             let cross = Math.abs(a.cross(b))
@@ -147,8 +152,9 @@ export class Polygon extends Shape
 
     public override update(body: RigidBody<this>)
     {
-        let vertices = this.vertices.map(vertex => vertex.rotate(body.angle))
-        let normals = this.normals.map(normal => normal.rotate(body.angle))
+        let rotate = Matrix2.rotate(body.angle)
+        let vertices = this.vertices.map(vertex => rotate.mul(vertex))
+        let normals = this.normals.map(normal => rotate.mul(normal))
 
         this.transform = new TransformedPolygon(vertices, normals)
     }
@@ -161,7 +167,7 @@ export class Polygon extends Shape
 
         for (let i = 0; i < this.vertices.length; i++)
         {
-            let [a, b] = Vector2.pair(this.vertices, i)
+            let [a, b] = Polygon.pair(this.vertices, i)
 
             let u = a.add(b).div(2)
             let v = u.add(this.normals[i].mul(0.1))

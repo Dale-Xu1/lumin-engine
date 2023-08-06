@@ -59,7 +59,9 @@ export const enum TextureFormat
 
     R_U32    = "r32uint",  RG_U32    = "rg32uint",  RGBA_U32    = "rgba32uint",
     R_I32    = "r32sint",  RG_I32    = "rg32sint",  RGBA_I32    = "rgba32sint",
-    R_F32    = "r32float", RG_F32    = "rg32float", RGBA_F32    = "rgba32float"
+    R_F32    = "r32float", RG_F32    = "rg32float", RGBA_F32    = "rgba32float",
+
+    DEPTH24 = "depth24plus", DEPTH32 = "depth32float", DEPTH24_STENCIL8 = "depth24plus-stencil8"
 }
 
 type TextureData =
@@ -86,6 +88,7 @@ export class Texture implements Resource
             case TextureFormat.RGBA_U8:    case TextureFormat.RGBA_I8:
             case TextureFormat.RG_U16:     case TextureFormat.RG_I16:   case TextureFormat.RG_F16:
             case TextureFormat.R_U32:      case TextureFormat.R_I32:    case TextureFormat.R_F32:
+            case TextureFormat.DEPTH24:    case TextureFormat.DEPTH32:  case TextureFormat.DEPTH24_STENCIL8:
                 return 4
 
             case TextureFormat.RGBA_U16:   case TextureFormat.RGBA_I16: case TextureFormat.RGBA_F16:

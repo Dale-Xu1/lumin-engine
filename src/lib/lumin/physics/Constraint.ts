@@ -1,4 +1,4 @@
-import { Vector2 } from "../Math"
+import { Matrix2, Vector2 } from "../Math"
 import { Component } from "../Entity"
 import type RigidBody from "./RigidBody"
 import type Shape from "./Shape"
@@ -33,7 +33,10 @@ export default class Constraint extends Component
 
     private get localPoints(): [Vector2, Vector2]
     {
-        return [this.pointA.rotate(this.a.angle), this.pointB.rotate(this.b.angle)]
+        let a = Matrix2.rotate(this.a.angle)
+        let b = Matrix2.rotate(this.b.angle)
+
+        return [a.mul(this.pointA), b.mul(this.pointB)]
     }
 
     private calculateDelta(): Vector2
@@ -81,8 +84,9 @@ export default class Constraint extends Component
         c.strokeStyle = "black"
         c.strokeWidth = 1
 
-        let u = this.a.entity.position.add(this.pointA.rotate(this.a.angle))
-        let v = this.b.entity.position.add(this.pointB.rotate(this.b.angle))
+        let [pointA, pointB] = this.localPoints
+        let u = this.a.entity.position.add(pointA)
+        let v = this.b.entity.position.add(pointB)
 
         c.beginPath()
         c.moveTo(u.x, u.y)

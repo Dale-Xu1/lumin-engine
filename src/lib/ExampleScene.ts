@@ -1,5 +1,5 @@
 import * as Lumin from "./lumin/Lumin"
-import { BodyType, Circle, Constraint, Entity, Input, Key, MouseButton,
+import { BodyType, Circle, Constraint, Entity, Input, Key, Matrix2, MouseButton,
     Ray, Rectangle, RigidBody, Shape, Vector2 } from "./lumin/Lumin"
 
 class Control extends Lumin.Component
@@ -30,7 +30,7 @@ class Control extends Lumin.Component
         let t = c.getTransform()
         c.restore()
 
-        let intersection = this.scene.physics.testRay(new Ray(this.entity.position, Vector2.DOWN.rotate(this.entity.angle)))
+        let intersection = this.scene.physics.testRay(new Ray(this.entity.position, Matrix2.rotate(this.entity.angle).mul(Vector2.DOWN)))
         if (intersection !== null)
         {
             c.strokeStyle = "red"

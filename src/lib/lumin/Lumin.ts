@@ -35,7 +35,7 @@ export { default as Engine } from "./Engine"
 export { Input, Key, MouseButton, Scene } from "./Engine"
 export { default as Entity } from "./Entity"
 export { Component, Camera } from "./Entity"
-export { Vector2, Vector3 } from "./Math"
+export { Matrix2, Matrix4, Vector2, Vector3 } from "./Math"
 
 export { default as PhysicsEngine } from "./physics/PhysicsEngine"
 export type { PhysicsParams } from "./physics/PhysicsEngine"
