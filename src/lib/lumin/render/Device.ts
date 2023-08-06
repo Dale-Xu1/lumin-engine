@@ -72,12 +72,11 @@ abstract class Pipeline<T extends GPUPipelineBase>
     public bind(group: number, bindings: [number, Resource][])
     {
         let device = this.device.device
-
-        let entries: GPUBindGroupEntry[] = []
-        for (let [binding, resource] of bindings) entries.push({ binding, resource: resource.getBinding() })
-
-        let layout = this.pipeline.getBindGroupLayout(group)
-        this.bindings.push([group, device.createBindGroup({ layout, entries })])
+        this.bindings.push([group, device.createBindGroup(
+        {
+            layout: this.pipeline.getBindGroupLayout(group),
+            entries: bindings.map(([binding, resource]) => ({ binding, resource: resource.getBinding() }))
+        })])
     }
 
     protected setBindings(pass: GPUBindingCommandsMixin)
@@ -115,20 +114,16 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
     public constructor(device: Device, shader: Shader, vertex: string, fragment: string,
         format: TextureFormat, buffers: [number, Buffer, VertexFormat, StepMode?][])
     {
-        let entries: GPUVertexBufferLayout[] = []
-        for (let [location, _, format, step = StepMode.VERTEX] of buffers)
-        {
-            entries.push(
-            {
-                arrayStride: RenderPipeline.getBytes(format),
-                stepMode: step,
-                attributes:
-                [{
-                    format, offset: 0,
-                    shaderLocation: location
-                }]
-            })
-        }
+        let entries = buffers.map(([location, _, format, step = StepMode.VERTEX]) =>
+        ({
+            arrayStride: RenderPipeline.getBytes(format),
+            stepMode: step,
+            attributes:
+            [{
+                format, offset: 0,
+                shaderLocation: location
+            }]
+        }))
         super(device, device.device.createRenderPipeline(
         {
             layout: "auto",
@@ -146,7 +141,7 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
             }
         }))
 
-        for (let buffer of buffers) this.buffers.push(buffer.slice(0, 2) as [number, Buffer])
+        this.buffers = buffers.map(buffer => buffer.slice(0, 2) as [number, Buffer])
     }
 
     public render(texture: Texture, vertices: number, instances?: number)

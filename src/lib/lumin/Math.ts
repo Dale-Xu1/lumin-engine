@@ -1,4 +1,4 @@
-export default class Vector2
+export class Vector2
 {
 
     public static readonly ZERO: Vector2 = new Vector2(0, 0)
@@ -56,3 +56,5 @@ export default class Vector2
     }
 
 }
+
+export class Vector3 { }

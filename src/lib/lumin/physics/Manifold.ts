@@ -1,4 +1,4 @@
-import Vector2 from "../Vector2"
+import { Vector2 } from "../Math"
 import type RigidBody from "./RigidBody"
 import type Shape from "./Shape"
 

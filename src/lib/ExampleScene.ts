@@ -1,17 +1,8 @@
-import { Input, Key, MouseButton, Scene } from "./lumin/Lumin"
-import Vector2 from "./lumin/Vector2"
-import RigidBody, { BodyType } from "./lumin/physics/RigidBody"
-import Shape, { Circle, Ray, Rectangle } from "./lumin/physics/Shape"
-import PhysicsEngine from "./lumin/physics/PhysicsEngine"
-import Constraint from "./lumin/physics/Constraint"
-import Entity, { Component } from "./lumin/Entity"
-import Lumin from "./lumin/Lumin"
+import * as Lumin from "./lumin/Lumin"
+import { BodyType, Circle, Constraint, Entity, Input, Key, MouseButton,
+    Ray, Rectangle, RigidBody, Shape, Vector2 } from "./lumin/Lumin"
 
-// TODO: UI system
-// TODO: Scene description file
-// TODO: Particle system
-
-class Control extends Component
+class Control extends Lumin.Component
 {
 
     private body!: RigidBody<Rectangle>
@@ -60,7 +51,7 @@ class Control extends Component
 
 }
 
-class AddBody extends Component
+class AddBody extends Lumin.Component
 {
 
     private down: boolean = false
@@ -81,13 +72,13 @@ class AddBody extends Component
 
 }
 
-export default class ExampleScene extends Scene
+export default class ExampleScene extends Lumin.Scene
 {
 
     public constructor()
     {
         let camera = new Entity(Vector2.ZERO, 0, [Lumin.camera])
-        super(camera, new PhysicsEngine())
+        super(camera, new Lumin.PhysicsEngine())
 
         this.addEntity(new Entity(Vector2.ZERO, 0, [new AddBody()]))
 

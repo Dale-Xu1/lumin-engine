@@ -1,4 +1,4 @@
-import Vector2 from "../Vector2"
+import { Vector2 } from "../Math"
 import type RigidBody from "./RigidBody"
 
 export default abstract class Shape
@@ -66,7 +66,7 @@ export class Circle extends Shape
 
 }
 
-export class Transform
+export class TransformedPolygon
 {
 
     public constructor(public readonly vertices: Vector2[], public readonly normals: Vector2[] = []) { }
@@ -77,7 +77,7 @@ export class Polygon extends Shape
 {
 
     public readonly normals: Vector2[] = []
-    public transform!: Transform
+    public transform!: TransformedPolygon
 
     public constructor(public readonly vertices: Vector2[], density: number = 1)
     {
@@ -150,7 +150,7 @@ export class Polygon extends Shape
         let vertices = this.vertices.map(vertex => vertex.rotate(body.angle))
         let normals = this.normals.map(normal => normal.rotate(body.angle))
 
-        this.transform = new Transform(vertices, normals)
+        this.transform = new TransformedPolygon(vertices, normals)
     }
 
     public override render(c: CanvasRenderingContext2D)

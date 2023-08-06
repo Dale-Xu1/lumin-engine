@@ -1,16 +1,14 @@
 <script lang="ts">
 import { onMount } from "svelte"
 
-import { Camera } from "./lumin/Entity"
-import Lumin from "./lumin/Lumin"
-
+import * as Lumin from "./lumin/Lumin"
 import ExampleScene from "./ExampleScene"
 
 let canvas: HTMLCanvasElement
 onMount(() =>
 {
     let width = window.innerWidth, height = window.innerHeight
-    Lumin.camera = new Camera(canvas, width, height)
+    Lumin.init(new Lumin.Camera(canvas, width, height))
 
     Lumin.enter(new ExampleScene())
     Lumin.engine.start()

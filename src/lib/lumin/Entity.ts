@@ -1,5 +1,5 @@
-import type Vector2 from "./Vector2"
-import type { Scene } from "./Lumin"
+import type { Vector2 } from "./Math"
+import type { Scene } from "./Engine"
 
 interface Constructor<T> { new(...args: any[]): T }
 
