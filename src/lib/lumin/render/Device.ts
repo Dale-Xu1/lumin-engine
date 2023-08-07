@@ -64,11 +64,12 @@ abstract class Pipeline<T extends GPUPipelineBase>
 {
 
     protected readonly device: Device
-    private readonly bindings: [number, GPUBindGroup][] = []
+    private bindings: [number, GPUBindGroup][] = []
 
     protected constructor(device: Device, public readonly pipeline: T) { this.device = device }
 
 
+    public reset() { this.bindings = [] }
     public bind(group: number, bindings: [number, Resource][])
     {
         let device = this.device.device
@@ -91,7 +92,7 @@ export const enum VertexFormat
 {
     I32 = "sint32",  I32_2 = "sint32x2",  I32_3 = "sint32x3",  I32_4 = "sint32x4",
     U32 = "uint32",  U32_2 = "uint32x2",  U32_3 = "uint32x3",  U32_4 = "uint32x4",
-    F32 = "float32", F32_2 = "float32x2", F32_3 = "float32x2", F32_4 = "float32x2"
+    F32 = "float32", F32_2 = "float32x2", F32_3 = "float32x3", F32_4 = "float32x4"
 }
 
 export class RenderPipeline extends Pipeline<GPURenderPipeline>
@@ -109,12 +110,13 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
     }
 
 
-    private readonly buffers: [number, Buffer][] = []
+    private readonly vertices: [number, Buffer][]
+    private readonly index: Buffer | null
 
-    public constructor(device: Device, shader: Shader, vertex: string, fragment: string,
-        format: TextureFormat, buffers: [number, Buffer, VertexFormat, StepMode?][])
+    public constructor(device: Device, shader: Shader, vertex: string, fragment: string, format: TextureFormat,
+        vertices: [number, Buffer, VertexFormat, StepMode?][], index?: Buffer)
     {
-        let entries = buffers.map(([location, _, format, step = StepMode.VERTEX]) =>
+        let entries = vertices.map(([location, _, format, step = StepMode.VERTEX]) =>
         ({
             arrayStride: RenderPipeline.getBytes(format),
             stepMode: step,
@@ -141,10 +143,11 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
             }
         }))
 
-        this.buffers = buffers.map(buffer => buffer.slice(0, 2) as [number, Buffer])
+        this.vertices = vertices.map(buffer => buffer.slice(0, 2) as [number, Buffer])
+        this.index = index ?? null
     }
 
-    public render(texture: Texture, vertices: number, instances?: number)
+    public render(texture: Texture, count: number, instances?: number)
     {
         let pass = this.device.encoder.beginRenderPass(
         {
@@ -157,9 +160,14 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
 
         pass.setPipeline(this.pipeline)
         this.setBindings(pass)
-        for (let [location, buffer] of this.buffers) pass.setVertexBuffer(location, buffer.buffer)
+        for (let [location, buffer] of this.vertices) pass.setVertexBuffer(location, buffer.buffer)
 
-        pass.draw(vertices, instances)
+        if (this.index !== null)
+        {
+            pass.setIndexBuffer(this.index.buffer, "uint32")
+            pass.drawIndexed(count, instances)
+        }
+        else pass.draw(count, instances)
         pass.end()
     }
 

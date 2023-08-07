@@ -139,3 +139,46 @@ export class Texture implements Resource
     public getBinding(): GPUBindingResource { return this.view }
 
 }
+
+export const enum SamplerAddressMode { REPEAT = "repeat", MIRROR_REPEAT = "mirror-repeat", CLAMP = "clamp-to-edge" }
+export const enum SamplerFilterMode { NEAREST = "nearest", LINEAR = "linear" }
+
+export interface SamplerParams
+{
+
+    addressU?: SamplerAddressMode
+    addressV?: SamplerAddressMode
+    addressW?: SamplerAddressMode
+
+    mag?: SamplerFilterMode
+    min?: SamplerFilterMode
+    mipmap?: SamplerFilterMode
+
+}
+
+export class Sampler implements Resource
+{
+    
+    private readonly sampler: GPUSampler
+
+    public constructor({ device }: Device,
+    {
+        addressU = SamplerAddressMode.CLAMP,
+        addressV = SamplerAddressMode.CLAMP,
+        addressW = SamplerAddressMode.CLAMP,
+
+        mag = SamplerFilterMode.NEAREST,
+        min = SamplerFilterMode.NEAREST,
+        mipmap = SamplerFilterMode.NEAREST
+    }: SamplerParams = {})
+    {
+        this.sampler = device.createSampler(
+        {
+            addressModeU: addressU, addressModeV: addressV, addressModeW: addressW,
+            magFilter: mag, minFilter: min, mipmapFilter: mipmap
+        })
+    }
+
+    public getBinding(): GPUBindingResource { return this.sampler }
+
+}

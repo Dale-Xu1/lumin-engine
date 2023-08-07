@@ -1,11 +1,12 @@
 import Device, { ComputePipeline, RenderPipeline, Shader, VertexFormat } from "./Device"
-import { Buffer, Texture, TextureFormat } from "./Resource"
+import { Buffer, Sampler, Texture, TextureFormat } from "./Resource"
 
 import renderCode from "./shaders/render.wgsl?raw"
+import quadCode from "./shaders/quad.wgsl?raw"
 import computeCode from "./shaders/compute.wgsl?raw"
 
 // TODO: Entity parenting
-// TODO: Deferred rendering and depth buffer
+// TODO: Depth buffer (test with instancing quads at different depths)
 
 export default class RenderEngine
 {
@@ -22,8 +23,20 @@ export default class RenderEngine
         let vertices = new Buffer(device, GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST, 12)
         vertices.write(new Float32Array(
         [
-            [-1, -1], [1, -1], [ 1, 1],
-            [-1, -1], [1,  1], [-1, 1]
+            [-1, -1, 0], [1, -1, 0], [ 1, 1, 0], [-1, 1, 0]
+        ].flat()))
+
+        let indices = new Buffer(device, GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST, 6)
+        indices.write(new Uint32Array(
+        [
+            0, 1, 2,
+            0, 2, 3
+        ]))
+
+        let uvs = new Buffer(device, GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST, 8)
+        uvs.write(new Float32Array(
+        [
+            [0, 0], [1, 0], [1, 1], [0, 1]
         ].flat()))
 
         const SCALE = 5
@@ -42,12 +55,17 @@ export default class RenderEngine
         for (let i = 0; i < stateData.length; i++) stateData[i] = Math.random() > 0.6 ? 1 : 0
         state.write(stateData)
 
-        // let texture = new Texture(device, TextureFormat.RGBA_UNORM,
-        //     GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST, [canvas.width, canvas.height])
+        let texture = new Texture(device, TextureFormat.RGBA_UNORM,
+            GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING, [canvas.width, canvas.height])
+        let sampler = new Sampler(device)
 
-        let render = new RenderPipeline(device, new Shader(device, renderCode), "vertex", "fragment",
-            device.texture.format, [[0, vertices, VertexFormat.F32_2]])
+        let render = new RenderPipeline(device, new Shader(device, renderCode), "vs", "fs",
+            texture.format, [[0, vertices, VertexFormat.F32_3]], indices)
         render.bind(0, [[0, gridSize], [1, state]])
+
+        let quad = new RenderPipeline(device, new Shader(device, quadCode), "vs", "fs", device.texture.format,
+            [[0, vertices, VertexFormat.F32_3], [1, uvs, VertexFormat.F32_2]], indices)
+        quad.bind(0, [[0, texture], [1, sampler]])
 
         let compute = new ComputePipeline(device, new Shader(device, computeCode), "main")
         compute.bind(0, [[0, gridSize], [1, state], [2, temp]])
@@ -59,7 +77,8 @@ export default class RenderEngine
             compute.dispatch(Math.ceil(GRID_WIDTH / 8), Math.ceil(GRID_HEIGHT / 8))
 
             device.copyTexture(temp, state)
-            render.render(device.texture, 6, length)
+            render.render(texture, 6, length)
+            quad.render(device.texture, 6)
 
             device.flush()
         }
