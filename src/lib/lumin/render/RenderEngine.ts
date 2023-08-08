@@ -1,9 +1,10 @@
-import Device, { ComputePipeline, RenderPipeline, Shader, VertexFormat } from "./Device"
+import Device, { ComputePipeline, LoadOperation, RenderPipeline, Shader, VertexFormat } from "./Device"
 import { Buffer, Sampler, Texture, TextureFormat } from "./Resource"
 
 import renderCode from "./shaders/render.wgsl?raw"
 import quadCode from "./shaders/quad.wgsl?raw"
 import computeCode from "./shaders/compute.wgsl?raw"
+import testCode from "./shaders/test.wgsl?raw"
 
 // TODO: Entity parenting
 // TODO: Depth buffer (test with instancing quads at different depths)
@@ -59,28 +60,47 @@ export default class RenderEngine
             GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING, [canvas.width, canvas.height])
         let sampler = new Sampler(device)
 
-        let render = new RenderPipeline(device, new Shader(device, renderCode), "vs", "fs",
-            texture.format, [[0, vertices, VertexFormat.F32_3]], indices)
-        render.bind(0, [[0, gridSize], [1, state]])
+        let depth = new Texture(device, TextureFormat.DEPTH24, GPUTextureUsage.RENDER_ATTACHMENT,
+            [canvas.width, canvas.height])
 
-        let quad = new RenderPipeline(device, new Shader(device, quadCode), "vs", "fs", device.texture.format,
-            [[0, vertices, VertexFormat.F32_3], [1, uvs, VertexFormat.F32_2]], indices)
-        quad.bind(0, [[0, texture], [1, sampler]])
+        let render = new RenderPipeline(device, new Shader(device, renderCode),
+            texture.format, [{ format: VertexFormat.F32_3 }])
+        render.bind(0, [gridSize, state])
 
-        let compute = new ComputePipeline(device, new Shader(device, computeCode), "main")
-        compute.bind(0, [[0, gridSize], [1, state], [2, temp]])
+        let quad = new RenderPipeline(device, new Shader(device, quadCode), device.texture.format,
+            [{ format: VertexFormat.F32_3 }, { format: VertexFormat.F32_2 }])
+        quad.bind(0, [texture, sampler])
+
+        let test = new RenderPipeline(device, new Shader(device, testCode), texture.format,
+            [{ format: VertexFormat.F32_3 }])
+
+        let compute = new ComputePipeline(device, new Shader(device, computeCode))
+        compute.bind(0, [gridSize, state, temp])
 
         window.requestAnimationFrame(update)
         function update()
         {
             window.requestAnimationFrame(update)
-            compute.dispatch(Math.ceil(GRID_WIDTH / 8), Math.ceil(GRID_HEIGHT / 8))
+
+            let c = compute.start()
+            c.dispatch(Math.ceil(GRID_WIDTH / 8), Math.ceil(GRID_HEIGHT / 8))
+            c.end() 
 
             device.copyTexture(temp, state)
-            render.render(texture, 6, length)
-            quad.render(device.texture, 6)
 
-            device.flush()
+            let r = render.start(texture)
+            r.render(6, [vertices], { index: indices, instances: length })
+            r.end()
+
+            let t = test.start(texture, LoadOperation.LOAD)
+            t.render(6, [vertices], { index: indices })
+            t.end()
+
+            let q = quad.start(device.texture)
+            q.render(6, [vertices, uvs], { index: indices })
+            q.end() 
+
+            device.submit()
         }
     }
 

@@ -157,8 +157,15 @@ export class Matrix2
 
 }
 
-// TODO: Matrix4
+// TODO: Matrix4 and Quaternion
 export class Matrix4
+{
+
+
+
+}
+
+export class Quaternion
 {
 
 
