@@ -121,6 +121,17 @@ export interface RenderPipelineParams
 
     primitive?: PrimitiveTopology
     cull?: CullMode
+    depth?: TextureFormat
+
+}
+
+export interface RenderEncoderParams
+{
+
+    load?: LoadOperation
+
+    depth?: Texture
+    depthLoad?: LoadOperation
 
 }
 
@@ -143,7 +154,8 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
     {
         vertex = "vs", fragment = "fs",
         primitive = PrimitiveTopology.TRIANGLE,
-        cull = CullMode.BACK
+        cull = CullMode.BACK,
+        depth
     }: RenderPipelineParams = {})
     {
         let entries = vertices.map(({ format, step = StepMode.VERTEX }, i) =>
@@ -175,11 +187,21 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
             {
                 topology: primitive,
                 cullMode: cull
-            }
+            },
+            depthStencil: depth ?
+            {
+                format: depth,
+                depthWriteEnabled: true,
+                depthCompare: "less"
+            } : undefined
         }))
     }
 
-    public override start(texture: Texture, load: LoadOperation = LoadOperation.CLEAR): RenderPassEncoder
+    public override start(texture: Texture,
+    {
+        load = LoadOperation.CLEAR,
+        depth, depthLoad = LoadOperation.CLEAR
+    }: RenderEncoderParams = {}): RenderPassEncoder
     {
         let encoder = this.device.encoder.beginRenderPass(
         {
@@ -187,7 +209,13 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
             [{
                 view: texture.view,
                 loadOp: load, storeOp: "store"
-            }]
+            }],
+            depthStencilAttachment: depth ?
+            {
+                view: depth.view,
+                depthClearValue: 1,
+                depthLoadOp: depthLoad, depthStoreOp: "store"
+            } : undefined
         })
 
         encoder.setPipeline(this.pipeline)

@@ -7,7 +7,6 @@ import computeCode from "./shaders/compute.wgsl?raw"
 import testCode from "./shaders/test.wgsl?raw"
 
 // TODO: Entity parenting
-// TODO: Depth buffer (test with instancing quads at different depths)
 
 export default class RenderEngine
 {
@@ -64,7 +63,7 @@ export default class RenderEngine
             [canvas.width, canvas.height])
 
         let render = new RenderPipeline(device, new Shader(device, renderCode),
-            texture.format, [{ format: VertexFormat.F32_3 }])
+            texture.format, [{ format: VertexFormat.F32_3 }], { depth: depth.format })
         render.bind(0, [gridSize, state])
 
         let quad = new RenderPipeline(device, new Shader(device, quadCode), device.texture.format,
@@ -72,7 +71,7 @@ export default class RenderEngine
         quad.bind(0, [texture, sampler])
 
         let test = new RenderPipeline(device, new Shader(device, testCode), texture.format,
-            [{ format: VertexFormat.F32_3 }])
+            [{ format: VertexFormat.F32_3 }], { depth: depth.format })
 
         let compute = new ComputePipeline(device, new Shader(device, computeCode))
         compute.bind(0, [gridSize, state, temp])
@@ -88,11 +87,11 @@ export default class RenderEngine
 
             device.copyTexture(temp, state)
 
-            let r = render.start(texture)
+            let r = render.start(texture, { depth })
             r.render(6, [vertices], { index: indices, instances: length })
             r.end()
 
-            let t = test.start(texture, LoadOperation.LOAD)
+            let t = test.start(texture, { load: LoadOperation.LOAD, depth, depthLoad: LoadOperation.LOAD })
             t.render(6, [vertices], { index: indices })
             t.end()
 
