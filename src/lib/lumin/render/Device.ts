@@ -12,7 +12,7 @@ export default class Device
         let device = await adapter.requestDevice()
 
         let context = canvas.getContext("webgpu")
-        if (context === null) throw new Error("HTML canvas does not support WebGPU")
+        if (context === null) throw new Error("No WebGPU context found")
 
         let format = window.navigator.gpu.getPreferredCanvasFormat()
         context.configure({ device: device, format })
@@ -20,7 +20,7 @@ export default class Device
         return new Device(device, context)
     }
 
-    public encoder!: GPUCommandEncoder
+    public encoder: GPUCommandEncoder
     public get texture(): Texture { return new Texture(this, this.context.getCurrentTexture()) }
 
     private constructor(public readonly device: GPUDevice, private readonly context: GPUCanvasContext)
@@ -65,8 +65,8 @@ export interface Pipeline<T extends GPUPipelineBase, V extends GPUBindingCommand
 
     device: Device
     pipeline: T
-
     encoder: V
+
     end(): void
 
 }
@@ -114,7 +114,7 @@ export interface VertexFormatParams
 
 }
 
-export const enum PrimitiveTopology { POINT = "point-list", LINE = "line-list", TRIANGLE = "triangle-list" }
+export const enum Primitive { POINT = "point-list", LINE = "line-list", TRIANGLE = "triangle-list" }
 export const enum CullMode { NONE = "none", FRONT = "front", BACK = "back" }
 
 export interface RenderPipelineParams
@@ -123,10 +123,11 @@ export interface RenderPipelineParams
     vertex?: string
     fragment?: string
 
-    primitive?: PrimitiveTopology
+    primitive?: Primitive
     cull?: CullMode
     depth?: TextureFormat
 
+    samples?: number
     blend?: boolean
 
 }
@@ -162,9 +163,8 @@ export class RenderPipeline implements Pipeline<GPURenderPipeline, GPURenderPass
         vertices: VertexFormatParams[],
     {
         vertex = "vs", fragment = "fs",
-        primitive = PrimitiveTopology.TRIANGLE,
-        cull = CullMode.BACK,
-        depth, blend = false
+        primitive = Primitive.TRIANGLE, cull = CullMode.BACK,
+        depth, samples, blend = false
     }: RenderPipelineParams = {})
     {
         let entries = vertices.map(({ format, step = StepMode.VERTEX }, i) =>
@@ -211,7 +211,8 @@ export class RenderPipeline implements Pipeline<GPURenderPipeline, GPURenderPass
                 format: depth,
                 depthWriteEnabled: true,
                 depthCompare: "less"
-            } : undefined
+            } : undefined,
+            multisample: { count: samples }
         })
     }
 
@@ -220,7 +221,7 @@ export class RenderPipeline implements Pipeline<GPURenderPipeline, GPURenderPass
     public start(texture: Texture,
     {
         load = LoadOperation.CLEAR,
-        depth, depthLoad = LoadOperation.CLEAR
+        depth, depthLoad = load
     }: RenderEncoderParams = {})
     {
         this.encoder = this.device.encoder.beginRenderPass(

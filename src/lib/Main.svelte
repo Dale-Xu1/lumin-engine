@@ -8,15 +8,12 @@ import RenderEngine from "./lumin/render/RenderEngine"
 let canvas: HTMLCanvasElement
 onMount(() =>
 {
-    let width = window.innerWidth, height = window.innerHeight
+    // let width = window.innerWidth, height = window.innerHeight
     // Lumin.init(new Lumin.Camera(canvas, width, height))
 
     // Lumin.enter(new ExampleScene())
     // Lumin.engine.start()
 
-    let ratio = window.devicePixelRatio
-    canvas.width = width * ratio
-    canvas.height = height * ratio
     let renderer = new RenderEngine(canvas)
 })
 

@@ -3,6 +3,9 @@ import type { Scene } from "./Engine"
 
 interface Constructor<T> { new(...args: any[]): T }
 
+// TODO: Entity parenting
+// TODO: Quaternions for entity rotation
+
 export default class Entity
 {
 

@@ -111,9 +111,9 @@ export class Texture implements Resource
 
     public constructor(device: Device, texture: GPUTexture)
     public constructor(device: Device, format: TextureFormat, usage: GPUTextureUsageFlags,
-        size: [number, number?, number?])
+        size: [number, number?, number?], samples?: number)
     public constructor({ device }: Device, texture: GPUTexture | TextureFormat,
-        usage?: GPUTextureUsageFlags, size?: [number, number?, number?])
+        usage?: GPUTextureUsageFlags, size?: [number, number?, number?], samples?: number)
     {
         this.device = device
         if (typeof(texture) === "string")
@@ -121,7 +121,7 @@ export class Texture implements Resource
             let format = texture, [x, y = 1, z = 1] = size!
 
             this.size = [x, y, z]
-            this.texture = device.createTexture({ size: this.size, format, usage: usage! })
+            this.texture = device.createTexture({ size: this.size, format, usage: usage!, sampleCount: samples })
         }
         else
         {
