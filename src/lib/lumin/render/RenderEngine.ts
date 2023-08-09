@@ -7,6 +7,7 @@ import computeCode from "./shaders/compute.wgsl?raw"
 import testCode from "./shaders/test.wgsl?raw"
 
 // TODO: Entity parenting
+// TODO: Multisampling
 
 export default class RenderEngine
 {
@@ -71,7 +72,7 @@ export default class RenderEngine
         quad.bind(0, [texture, sampler])
 
         let test = new RenderPipeline(device, new Shader(device, testCode), texture.format,
-            [{ format: VertexFormat.F32_3 }], { depth: depth.format })
+            [{ format: VertexFormat.F32_3 }], { depth: depth.format, blend: true })
 
         let compute = new ComputePipeline(device, new Shader(device, computeCode))
         compute.bind(0, [gridSize, state, temp])
@@ -97,7 +98,7 @@ export default class RenderEngine
 
             let q = quad.start(device.texture)
             q.render(6, [vertices, uvs], { index: indices })
-            q.end() 
+            q.end()
 
             device.submit()
         }

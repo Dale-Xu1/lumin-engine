@@ -3,6 +3,7 @@
         "AABB",
         "lerp",
         "Lumin",
+        "slerp",
         "UNORM",
         "webgpu",
         "wgsl",

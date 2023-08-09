@@ -123,6 +123,8 @@ export interface RenderPipelineParams
     cull?: CullMode
     depth?: TextureFormat
 
+    blend?: boolean
+
 }
 
 export interface RenderEncoderParams
@@ -155,7 +157,7 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
         vertex = "vs", fragment = "fs",
         primitive = PrimitiveTopology.TRIANGLE,
         cull = CullMode.BACK,
-        depth
+        depth, blend = false
     }: RenderPipelineParams = {})
     {
         let entries = vertices.map(({ format, step = StepMode.VERTEX }, i) =>
@@ -181,7 +183,15 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
             {
                 module: shader.module,
                 entryPoint: fragment,
-                targets: [{ format }]
+                targets:
+                [{
+                    format,
+                    blend: blend ?
+                    {
+                        color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
+                        alpha: { srcFactor: "one", dstFactor: "one" }
+                    } : undefined
+                }]
             },
             primitive:
             {
