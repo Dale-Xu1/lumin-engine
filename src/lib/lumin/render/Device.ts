@@ -25,7 +25,7 @@ export default class Device
 
     private constructor(public readonly device: GPUDevice, private readonly context: GPUCanvasContext)
     {
-        this.encoder = this.device.createCommandEncoder()
+        this.encoder = device.createCommandEncoder()
     }
 
 
@@ -60,36 +60,40 @@ export class Shader
 
 }
 
-interface PassEncoder { end(): void }
-abstract class Pipeline<T extends GPUPipelineBase>
+export interface Pipeline<T extends GPUPipelineBase, V extends GPUBindingCommandsMixin>
 {
 
-    protected readonly device: Device
-    private groups: GPUBindGroup[] = []
+    device: Device
+    pipeline: T
 
-    protected constructor(device: Device, public readonly pipeline: T) { this.device = device }
+    encoder: V
+    end(): void
 
+}
 
-    public bind(group: number, bindings: Resource[])
+export abstract class PassDescriptor<T extends Pipeline<GPUPipelineBase, GPUBindingCommandsMixin>>
+{
+
+    public readonly groups: GPUBindGroup[]
+
+    protected constructor(public readonly pipeline: T, bindings: Resource[][])
     {
-        let device = this.device.device
-        this.groups[group] = device.createBindGroup(
+        let { device: { device } } = pipeline
+        this.groups = bindings.map((group, i) => device.createBindGroup(
         {
-            layout: this.pipeline.getBindGroupLayout(group),
-            entries: bindings.map((resource, i) => ({ binding: i, resource: resource.getBinding() }))
-        })
+            layout: pipeline.pipeline.getBindGroupLayout(i),
+            entries: group.map((resource, i) => ({ binding: i, resource: resource.getBinding() }))
+        }))
     }
 
-    protected setBindings(pass: GPUBindingCommandsMixin)
+    protected bind()
     {
         for (let i = 0; i < this.groups.length; i++)
         {
             let group = this.groups[i]
-            pass.setBindGroup(i, group)
+            this.pipeline.encoder.setBindGroup(i, group)
         }
     }
-
-    public abstract start(...args: any[]): PassEncoder
 
 }
 
@@ -137,7 +141,7 @@ export interface RenderEncoderParams
 
 }
 
-export class RenderPipeline extends Pipeline<GPURenderPipeline>
+export class RenderPipeline implements Pipeline<GPURenderPipeline, GPURenderPassEncoder>
 {
 
     private static getBytes(format: VertexFormat): number
@@ -152,7 +156,10 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
     }
 
 
-    public constructor(device: Device, shader: Shader, format: TextureFormat, vertices: VertexFormatParams[],
+    public readonly pipeline: GPURenderPipeline
+
+    public constructor(public readonly device: Device, shader: Shader, format: TextureFormat,
+        vertices: VertexFormatParams[],
     {
         vertex = "vs", fragment = "fs",
         primitive = PrimitiveTopology.TRIANGLE,
@@ -170,7 +177,8 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
                 shaderLocation: i 
             }]
         }))
-        super(device, device.device.createRenderPipeline(
+
+        this.pipeline = device.device.createRenderPipeline(
         {
             layout: "auto",
             vertex:
@@ -204,16 +212,18 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
                 depthWriteEnabled: true,
                 depthCompare: "less"
             } : undefined
-        }))
+        })
     }
 
-    public override start(texture: Texture,
+
+    public encoder!: GPURenderPassEncoder
+    public start(texture: Texture,
     {
         load = LoadOperation.CLEAR,
         depth, depthLoad = LoadOperation.CLEAR
-    }: RenderEncoderParams = {}): RenderPassEncoder
+    }: RenderEncoderParams = {})
     {
-        let encoder = this.device.encoder.beginRenderPass(
+        this.encoder = this.device.encoder.beginRenderPass(
         {
             colorAttachments:
             [{
@@ -227,78 +237,81 @@ export class RenderPipeline extends Pipeline<GPURenderPipeline>
                 depthLoadOp: depthLoad, depthStoreOp: "store"
             } : undefined
         })
-
-        encoder.setPipeline(this.pipeline)
-        this.setBindings(encoder)    
-
-        return new RenderPassEncoder(encoder)
-    }
-
-}
-
-export interface RenderParams
-{
-
-    index?: Buffer
-    instances?: number
-
-}
-
-export class RenderPassEncoder implements PassEncoder
-{
-
-    public constructor(public readonly encoder: GPURenderPassEncoder) { }
-
-    public render(count: number, vertices: Buffer[], { index, instances }: RenderParams = {})
-    {
-        for (let i = 0; i < vertices.length; i++)
-        {
-            let buffer = vertices[i].buffer
-            this.encoder.setVertexBuffer(i, buffer)
-        }
-
-        if (index)
-        {
-            this.encoder.setIndexBuffer(index.buffer, "uint32")
-            this.encoder.drawIndexed(count, instances)
-        }
-        else this.encoder.draw(count, instances)
+        this.encoder.setPipeline(this.pipeline)
     }
 
     public end() { this.encoder.end() }
 
 }
 
-export class ComputePipeline extends Pipeline<GPUComputePipeline>
+export class RenderPass extends PassDescriptor<RenderPipeline>
 {
 
-    public constructor(device: Device, shader: Shader, entry: string = "main")
+    public readonly index: Buffer | null
+
+    public constructor(pipeline: RenderPipeline, bindings: Resource[][],
+        public readonly vertices: Buffer[], index?: Buffer)
     {
-        super(device, device.device.createComputePipeline(
-        {
-            layout: "auto",
-            compute: { module: shader.module, entryPoint: entry }
-        }))
+        super(pipeline, bindings)
+        this.index = index ?? null
     }
 
-    public override start(): ComputePassEncoder
+    public render(count: number, instances?: number)
     {
-        let encoder = this.device.encoder.beginComputePass()
+        let encoder = this.pipeline.encoder
+        this.bind()
 
-        encoder.setPipeline(this.pipeline)
-        this.setBindings(encoder) 
+        for (let i = 0; i < this.vertices.length; i++)
+        {
+            let buffer = this.vertices[i].buffer
+            encoder.setVertexBuffer(i, buffer)
+        }
 
-        return new ComputePassEncoder(encoder)
+        if (this.index !== null)
+        {
+            encoder.setIndexBuffer(this.index.buffer, "uint32")
+            encoder.drawIndexed(count, instances)
+        }
+        else encoder.draw(count, instances)
     }
 
 }
 
-export class ComputePassEncoder implements PassEncoder
+export class ComputePipeline implements Pipeline<GPUComputePipeline, GPUComputePassEncoder>
 {
 
-    public constructor(public readonly encoder: GPUComputePassEncoder) { }
+    public pipeline: GPUComputePipeline
 
-    public dispatch(x: number, y: number = 1, z: number = 1) { this.encoder.dispatchWorkgroups(x, y, z) }
-    public end() { this.encoder.end() }    
+    public constructor(public readonly device: Device, shader: Shader, entry: string = "main")
+    {
+        this.pipeline = device.device.createComputePipeline(
+        {
+            layout: "auto",
+            compute: { module: shader.module, entryPoint: entry }
+        })
+    }
+
+
+    public encoder!: GPUComputePassEncoder
+    public start()
+    {
+        this.encoder = this.device.encoder.beginComputePass()
+        this.encoder.setPipeline(this.pipeline)
+    }
+
+    public end() { this.encoder.end() }
+
+}
+
+export class ComputePass extends PassDescriptor<ComputePipeline>
+{
+
+    public constructor(pipeline: ComputePipeline, bindings: Resource[][]) { super(pipeline, bindings) }
+
+    public dispatch(x: number, y: number = 1, z: number = 1)
+    {
+        this.bind()
+        this.pipeline.encoder.dispatchWorkgroups(x, y, z)
+    }
 
 }

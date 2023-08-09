@@ -84,6 +84,7 @@ export class Vector3
 
 }
 
+// TODO: Test this code
 export class Quaternion
 {
 
@@ -97,12 +98,12 @@ export class Quaternion
 
     public static euler(x: number, y: number, z: number): Quaternion
     {
-        let cx = Math.cos(x * 0.5)
-        let sx = Math.sin(x * 0.5)
-        let cy = Math.cos(y * 0.5)
-        let sy = Math.sin(y * 0.5)
-        let cz = Math.cos(z * 0.5)
-        let sz = Math.sin(z * 0.5)
+        let cx = Math.cos(x / 2)
+        let sx = Math.sin(x / 2)
+        let cy = Math.cos(y / 2)
+        let sy = Math.sin(y / 2)
+        let cz = Math.cos(z / 2)
+        let sz = Math.sin(z / 2)
 
         let qx = sx * cy * cz - cx * sy * sz
         let qy = cx * sy * cz + sx * cy * sz
@@ -115,12 +116,10 @@ export class Quaternion
     public static slerp(a: Quaternion, b: Quaternion, t: number): Quaternion
     {
         let c = a.dot(b)
-        if (Math.abs(c) >= 1) return a
-
         let p = Math.acos(c), s = Math.sqrt(1 - c * c)
+
         let ra = Math.sin((1 - t) * p) / s
         let rb = Math.sin(t * p) / s
-
         return a.mul(ra).add(b.mul(rb))
     }
 

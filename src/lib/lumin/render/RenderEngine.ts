@@ -1,4 +1,4 @@
-import Device, { ComputePipeline, LoadOperation, RenderPipeline, Shader, VertexFormat } from "./Device"
+import Device, { ComputePass, ComputePipeline, LoadOperation, RenderPass, RenderPipeline, Shader, VertexFormat } from "./Device"
 import { Buffer, Sampler, Texture, TextureFormat } from "./Resource"
 
 import renderCode from "./shaders/render.wgsl?raw"
@@ -7,6 +7,7 @@ import computeCode from "./shaders/compute.wgsl?raw"
 import testCode from "./shaders/test.wgsl?raw"
 
 // TODO: Entity parenting
+// TODO: Quaternions for entity rotation
 // TODO: Multisampling
 
 export default class RenderEngine
@@ -65,40 +66,41 @@ export default class RenderEngine
 
         let render = new RenderPipeline(device, new Shader(device, renderCode),
             texture.format, [{ format: VertexFormat.F32_3 }], { depth: depth.format })
-        render.bind(0, [gridSize, state])
+        let renderPass = new RenderPass(render, [[gridSize, state]], [vertices], indices)
 
         let quad = new RenderPipeline(device, new Shader(device, quadCode), device.texture.format,
             [{ format: VertexFormat.F32_3 }, { format: VertexFormat.F32_2 }])
-        quad.bind(0, [texture, sampler])
+        let quadPass = new RenderPass(quad, [[texture, sampler]], [vertices, uvs], indices)
 
         let test = new RenderPipeline(device, new Shader(device, testCode), texture.format,
             [{ format: VertexFormat.F32_3 }], { depth: depth.format, blend: true })
+        let testPass = new RenderPass(test, [], [vertices], indices)
 
         let compute = new ComputePipeline(device, new Shader(device, computeCode))
-        compute.bind(0, [gridSize, state, temp])
+        let computePass = new ComputePass(compute, [[gridSize, state, temp]])
 
         window.requestAnimationFrame(update)
         function update()
         {
             window.requestAnimationFrame(update)
 
-            let c = compute.start()
-            c.dispatch(Math.ceil(GRID_WIDTH / 8), Math.ceil(GRID_HEIGHT / 8))
-            c.end() 
+            compute.start()
+            computePass.dispatch(Math.ceil(GRID_WIDTH / 8), Math.ceil(GRID_HEIGHT / 8))
+            compute.end()
 
             device.copyTexture(temp, state)
 
-            let r = render.start(texture, { depth })
-            r.render(6, [vertices], { index: indices, instances: length })
-            r.end()
+            render.start(texture, { depth })
+            renderPass.render(6, length)
+            render.end()
 
-            let t = test.start(texture, { load: LoadOperation.LOAD, depth, depthLoad: LoadOperation.LOAD })
-            t.render(6, [vertices], { index: indices })
-            t.end()
+            test.start(texture, { load: LoadOperation.LOAD, depth, depthLoad: LoadOperation.LOAD })
+            testPass.render(6)
+            test.end()
 
-            let q = quad.start(device.texture)
-            q.render(6, [vertices, uvs], { index: indices })
-            q.end()
+            quad.start(device.texture)
+            quadPass.render(6)
+            quad.end()
 
             device.submit()
         }
