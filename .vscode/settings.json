@@ -5,8 +5,9 @@
         "Lumin",
         "slerp",
         "UNORM",
+        "vmul",
         "webgpu",
         "wgsl",
-        "Workgroups"
+        "workgroup"
     ]
 }

@@ -153,8 +153,8 @@ export class Polygon extends Shape
     public override update(body: RigidBody<this>)
     {
         let rotate = Matrix2.rotate(body.angle)
-        let vertices = this.vertices.map(vertex => rotate.mul(vertex))
-        let normals = this.normals.map(normal => rotate.mul(normal))
+        let vertices = this.vertices.map(vertex => rotate.vmul(vertex))
+        let normals = this.normals.map(normal => rotate.vmul(normal))
 
         this.transform = new TransformedPolygon(vertices, normals)
     }

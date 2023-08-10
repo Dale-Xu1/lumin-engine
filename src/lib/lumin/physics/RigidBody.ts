@@ -157,12 +157,10 @@ export default class RigidBody<T extends Shape> extends Component
     {
         // Apply transformations
         c.save()
+        c.translate(this.entity.position.x, this.entity.position.y)
+        c.rotate(this.entity.euler.z)
 
         // TODO: Move debug lines to new rendering engine
-        let transform = Matrix4.rotate(this.entity.rotation)
-        c.transform(transform.m00, transform.m10, transform.m01, transform.m11,
-            this.entity.position.x, this.entity.position.y)
-
         this.shape.render(c)
         c.restore()
     }

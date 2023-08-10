@@ -36,7 +36,7 @@ export default class Constraint extends Component
         let a = Matrix2.rotate(this.a.angle)
         let b = Matrix2.rotate(this.b.angle)
 
-        return [a.mul(this.pointA), b.mul(this.pointB)]
+        return [a.vmul(this.pointA), b.vmul(this.pointB)]
     }
 
     private calculateDelta(): Vector2

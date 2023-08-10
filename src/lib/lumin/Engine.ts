@@ -158,6 +158,8 @@ export class Entity
     {
         // Apply transformations
         c.save()
+        c.translate(this.position.x, this.position.y)
+        c.rotate(this.euler.z)
 
         let transform = Matrix4.rotate(this.rotation)
         c.transform(transform.m00, transform.m10, transform.m01, transform.m11, this.position.x, this.position.y)

@@ -1,12 +1,12 @@
 import * as Lumin from "./lumin/Lumin"
-import { Entity, Quaternion, Vector3 } from "./lumin/Lumin"
+import { Entity, Quaternion } from "./lumin/Lumin"
 
 class TestComponent extends Lumin.Component
 {
 
     public override update()
     {
-        // this.entity.angle += 0.01
+        this.entity.rotation = this.entity.rotation.mul(Quaternion.rotate(0.01))
     }
 
     public override render(c: CanvasRenderingContext2D)

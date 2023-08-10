@@ -30,7 +30,7 @@ class Control extends Lumin.Component
         let t = c.getTransform()
         c.restore()
 
-        let intersection = this.scene.physics.testRay(new Ray(this.entity.position.cast(), Matrix2.rotate(this.entity.euler.z).mul(Vector2.DOWN)))
+        let intersection = this.scene.physics.testRay(new Ray(this.entity.position.cast(), Matrix2.rotate(this.entity.euler.z).vmul(Vector2.DOWN)))
         if (intersection !== null)
         {
             c.strokeStyle = "red"

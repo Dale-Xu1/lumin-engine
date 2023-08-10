@@ -119,7 +119,7 @@ export class Quaternion
 
         let ra = Math.sin((1 - t) * p) / s
         let rb = Math.sin(t * p) / s
-        return a.mul(ra).add(b.mul(rb))
+        return a.scale(ra).add(b.scale(rb))
     }
 
     public constructor(public readonly x: number, public readonly y: number, public readonly z: number, public readonly w: number) { }
@@ -128,12 +128,11 @@ export class Quaternion
     public add(q: Quaternion): Quaternion { return new Quaternion(this.x + q.x, this.y + q.y, this.z + q.z, this.w + q.w) }
     public sub(q: Quaternion): Quaternion { return new Quaternion(this.x - q.x, this.y - q.y, this.z - q.z, this.w - q.w) }
 
-    public mul(v: number): Quaternion { return new Quaternion(this.x * v, this.y * v, this.z * v, this.w * v) }
+    public scale(v: number): Quaternion { return new Quaternion(this.x * v, this.y * v, this.z * v, this.w * v) }
     public div(v: number): Quaternion { return new Quaternion(this.x / v, this.y / v, this.z / v, this.w / v) }
 
     public dot(q: Quaternion): number { return this.x * q.x + this.y * q.y + this.z * q.z + this.w * q.w }
-
-    public quMul(q: Quaternion): Quaternion
+    public mul(q: Quaternion): Quaternion
     {
         let x = this.w * q.x + this.x * q.w + this.y * q.z - this.z * q.y
         let y = this.w * q.y + this.y * q.w + this.z * q.x - this.x * q.z
@@ -194,7 +193,7 @@ export class Matrix2
         public readonly m10: number, public readonly m11: number) { }
 
 
-    public matMul(m: Matrix2): Matrix2
+    public mul(m: Matrix2): Matrix2
     {
         let a = this.m00 * m.m00 + this.m01 * m.m10
         let b = this.m00 * m.m01 + this.m01 * m.m11
@@ -204,7 +203,7 @@ export class Matrix2
         return new Matrix2(a, b, c, d)
     }
 
-    public mul(v: Vector2): Vector2
+    public vmul(v: Vector2): Vector2
     {
         let x = this.m00 * v.x + this.m01 * v.y
         let y = this.m10 * v.x + this.m11 * v.y
@@ -287,7 +286,7 @@ export class Matrix4
     ) { }
 
 
-    public matMul(m: Matrix4): Matrix4
+    public mul(m: Matrix4): Matrix4
     {
         let m00 = this.m00 * m.m00 + this.m01 * m.m10 + this.m02 * m.m20 + this.m03 * m.m30
         let m01 = this.m00 * m.m01 + this.m01 * m.m11 + this.m02 * m.m21 + this.m03 * m.m31
@@ -312,7 +311,7 @@ export class Matrix4
         return new Matrix4(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33)
     }
 
-    public mul(v: Vector3): Vector3
+    public vmul(v: Vector3): Vector3
     {
         let x = this.m00 * v.x + this.m01 * v.y + this.m02 * v.z + this.m03
         let y = this.m10 * v.x + this.m11 * v.y + this.m12 * v.z + this.m13

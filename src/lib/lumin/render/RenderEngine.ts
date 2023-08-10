@@ -38,7 +38,6 @@ export default class RenderEngine
 
     // public toWorldSpace(screen: Vector2): Vector2
     // {
-    //     // TODO: These should be using the camera projection matrix
     //     let dimensions = new Vector2(this.width / 2, this.height / 2)
 
     //     let world = screen.sub(dimensions).div(this.height / this.camera.size)
