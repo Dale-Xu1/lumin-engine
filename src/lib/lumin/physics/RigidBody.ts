@@ -142,7 +142,7 @@ export default class RigidBody<T extends Shape> extends Component
     public getBounds(): Bounds { return this.shape.getBounds(this) }
 
     private lerp(a: number, b: number, t: number): number { return a + (b - a) * t }
-    public preRender(alpha: number)
+    public override update(alpha: number)
     {
         if (this.type === BodyType.Static) return
         

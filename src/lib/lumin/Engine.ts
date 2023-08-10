@@ -82,16 +82,16 @@ export class Scene
 
     public update(delta: number)
     {
-        for (let entity of this.entities) entity.update(delta)
+        for (let entity of this.entities) entity.fixedUpdate(delta)
         this.physics.update(delta)
     }
 
     public render(alpha: number)
     {
-        this.physics.preRender(alpha)
+        for (let entity of this.entities) entity.update(alpha)
 
         let c = this.renderer.init()
-        for (let entity of this.entities) entity.render(c, alpha)
+        for (let entity of this.entities) entity.render(c)
 
         if (DEBUG) this.physics.debug(c)
     }
@@ -132,17 +132,20 @@ export class Entity
         if (index >= 0) this.components.splice(index, 1)
     }
 
+    // Entity lifecycle
     public init() { for (let component of this.components) component.init() }
-    public update(delta: number) { for (let component of this.components) component.update(delta) }
 
-    public render(c: CanvasRenderingContext2D, alpha: number)
+    public fixedUpdate(delta: number) { for (let component of this.components) component.fixedUpdate(delta) }
+    public update(alpha: number)      { for (let component of this.components) component.update(alpha) }
+
+    public render(c: CanvasRenderingContext2D)
     {
         // Apply transformations
         c.save()
         c.translate(this.position.x, this.position.y)
         c.rotate(this.angle)
 
-        for (let component of this.components) component.render(c, alpha)
+        for (let component of this.components) component.render(c)
         c.restore()
     }
 
@@ -159,8 +162,10 @@ export abstract class Component
 
     public init() { }
 
-    public update(delta: number) { }
-    public render(c: CanvasRenderingContext2D, alpha: number) { }
+    public fixedUpdate(delta: number) { }
+    public update(alpha: number) { }
+
+    public render(c: CanvasRenderingContext2D) { }
 
 }
 

@@ -98,7 +98,6 @@ export default class PhysicsEngine
         }
     }
 
-    public preRender(alpha: number) { for (let body of this.bodies) body.preRender(alpha) }
     public debug(c: CanvasRenderingContext2D)
     {
         for (let collision of this.collisions) collision.debug(c)

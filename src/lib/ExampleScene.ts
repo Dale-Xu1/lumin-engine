@@ -8,7 +8,7 @@ class Control extends Lumin.Component
     private body!: RigidBody<Rectangle>
 
     public override init() { this.body = this.getComponent(RigidBody)! }
-    public override update()
+    public override fixedUpdate()
     {
         let offset = Vector2.ZERO
         let angle = 0
@@ -55,14 +55,14 @@ class AddBody extends Lumin.Component
 {
 
     private down: boolean = false
-    public override update()
+    public override fixedUpdate()
     {
         let previous = this.down
         this.down = Input.button[MouseButton.LEFT]
 
         if (this.down && !previous)
         {
-            let position = this.scene.toWorldSpace(Input.mouse)
+            let position = this.scene.renderer.toWorldSpace(Input.mouse)
             if (this.scene.physics.testPoint(position).length > 0) return
 
             let shape = Math.random() < 0.5 ? new Circle(Math.random() * 0.4 + 0.2) : new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)

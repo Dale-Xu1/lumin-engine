@@ -4,7 +4,7 @@ import { Entity, Vector3 } from "./lumin/Lumin"
 class TestComponent extends Lumin.Component
 {
 
-    public override render(c: CanvasRenderingContext2D, alpha: number)
+    public override render(c: CanvasRenderingContext2D)
     {
         c.fillRect(0, 0, 1, 1)
     }
