@@ -1,5 +1,5 @@
 import { Component } from "../Engine"
-import { Vector2 } from "../Math"
+import { Matrix4, Quaternion, Vector2 } from "../Math"
 import type { Bounds } from "./Shape"
 import type Shape from "./Shape"
 
@@ -80,7 +80,7 @@ export default class RigidBody<T extends Shape> extends Component
     public override init()
     {
         this.previousPosition = this.position = this.entity.position.cast()
-        this.previousAngle = this.angle = this.entity.angle
+        this.previousAngle = this.angle = this.entity.euler.z
 
         this.scene.physics.bodies.push(this)
     }
@@ -136,7 +136,7 @@ export default class RigidBody<T extends Shape> extends Component
     private staticUpdate()
     {
         this.position = this.entity.position.cast()
-        this.angle = this.entity.angle
+        this.angle = this.entity.euler.z
     }
 
     public getBounds(): Bounds { return this.shape.getBounds(this) }
@@ -150,15 +150,18 @@ export default class RigidBody<T extends Shape> extends Component
         let position = Vector2.lerp(this.previousPosition, this.position, alpha)
  
         this.entity.position = position.cast(this.entity.position.z)
-        this.entity.angle = this.lerp(this.previousAngle, this.angle, alpha)
+        this.entity.rotation = Quaternion.rotate(this.lerp(this.previousAngle, this.angle, alpha))
     }
 
     public debug(c: CanvasRenderingContext2D)
     {
         // Apply transformations
         c.save()
-        c.translate(this.entity.position.x, this.entity.position.y)
-        c.rotate(this.entity.angle)
+
+        // TODO: Move debug lines to new rendering engine
+        let transform = Matrix4.rotate(this.entity.rotation)
+        c.transform(transform.m00, transform.m10, transform.m01, transform.m11,
+            this.entity.position.x, this.entity.position.y)
 
         this.shape.render(c)
         c.restore()

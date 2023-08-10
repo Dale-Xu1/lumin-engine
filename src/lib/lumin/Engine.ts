@@ -1,6 +1,6 @@
 import { browser } from "$app/environment"
 
-import { Vector2, Vector3 } from "./Math"
+import { Matrix4, Quaternion, Vector2, Vector3 } from "./Math"
 import type PhysicsEngine from "./physics/PhysicsEngine"
 import type RenderEngine from "./render/RenderEngine"
 
@@ -99,18 +99,34 @@ export class Scene
 }
 
 // TODO: Entity parenting
-// TODO: Quaternions for entity rotation
 
 interface Constructor<T> { new(...args: any[]): T }
+export interface EntityParams
+{
+
+    position?: Vector3
+    rotation?: Quaternion
+
+}
+
 export class Entity
 {
 
     public scene!: Scene
 
-    public constructor(public position: Vector3, public angle: number, public readonly components: Component[])
+    public position: Vector3
+    public rotation: Quaternion
+
+    public get euler(): Vector3 { return this.rotation.euler }
+
+    public constructor(public readonly components: Component[],
+        { position = Vector3.ZERO, rotation = Quaternion.IDENTITY }: EntityParams = {})
     {
         // Register components to this entity
         for (let component of components) component.entity = this
+
+        this.position = position
+        this.rotation = rotation
     }
 
 
@@ -142,8 +158,11 @@ export class Entity
     {
         // Apply transformations
         c.save()
-        c.translate(this.position.x, this.position.y)
-        c.rotate(this.angle)
+
+        let transform = Matrix4.rotate(this.rotation)
+        c.transform(transform.m00, transform.m10, transform.m01, transform.m11, this.position.x, this.position.y)
+        // c.translate(this.position.x, this.position.y)
+        // c.rotate(this.angle)
 
         for (let component of this.components) component.render(c)
         c.restore()

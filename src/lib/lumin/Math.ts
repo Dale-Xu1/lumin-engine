@@ -84,13 +84,12 @@ export class Vector3
 
 }
 
-// TODO: Test this code
 export class Quaternion
 {
 
     public static readonly IDENTITY: Quaternion = new Quaternion(0, 0, 0, 1)
 
-    public static rotate(a: number, axis: Vector3): Quaternion
+    public static rotate(a: number, axis: Vector3 = Vector3.FORWARD): Quaternion
     {
         let s = Math.sin(a / 2)
         return new Quaternion(s * axis.x, s * axis.y, s * axis.z, Math.cos(a / 2))
@@ -156,6 +155,21 @@ export class Quaternion
     }
 
     public inverse(): Quaternion { return new Quaternion(-this.x, -this.y, -this.z, this.w).div(this.lengthSq) }
+
+    public get euler(): Vector3
+    {
+        let sr = 2 * (this.w * this.x + this.y * this.z)
+        let cr = 1 - 2 * (this.x * this.x + this.y * this.y)
+
+        let sp = 2 * (this.w * this.y - this.x * this.z)
+        if (sp > 1) sp = 1
+        else if (sp < -1) sp = -1
+
+        let sy = 2 * (this.w * this.z + this.x * this.y)
+        let cy = 1 - 2 * (this.y * this.y + this.z * this.z)
+
+        return new Vector3(Math.atan2(sr, cr), Math.asin(sp), Math.atan2(sy, cy))
+    }
 
 }
 

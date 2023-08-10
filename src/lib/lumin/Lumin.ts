@@ -32,7 +32,7 @@ export function exit(): Scene | null
 } 
 
 export { default as Engine } from "./Engine"
-export { Component, Entity, Input, Key, MouseButton, Scene } from "./Engine"
+export { Component, Entity, type EntityParams, Input, Key, MouseButton, Scene } from "./Engine"
 export { Matrix2, Matrix4, Quaternion, Vector2, Vector3 } from "./Math"
 
 export { default as RenderEngine } from "./render/RenderEngine"

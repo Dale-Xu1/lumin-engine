@@ -1,5 +1,5 @@
 import { Component } from "../Engine"
-import { Vector2, type Vector3 } from "../Math"
+import type { Vector3 } from "../Math"
 
 export default class RenderEngine
 {
@@ -36,22 +36,22 @@ export default class RenderEngine
     }
 
 
-    public toWorldSpace(screen: Vector2): Vector2
-    {
-        // TODO: These should be using the camera projection matrix
-        let dimensions = new Vector2(this.width / 2, this.height / 2)
+    // public toWorldSpace(screen: Vector2): Vector2
+    // {
+    //     // TODO: These should be using the camera projection matrix
+    //     let dimensions = new Vector2(this.width / 2, this.height / 2)
 
-        let world = screen.sub(dimensions).div(this.height / this.camera.size)
-        return new Vector2(world.x, -world.y).sub(this.camera.position.cast())
-    }
+    //     let world = screen.sub(dimensions).div(this.height / this.camera.size)
+    //     return new Vector2(world.x, -world.y).sub(this.camera.position.cast())
+    // }
 
-    public toScreenSpace(world: Vector2): Vector2
-    {
-        let dimensions = new Vector2(this.width / 2, this.height / 2)
+    // public toScreenSpace(world: Vector2): Vector2
+    // {
+    //     let dimensions = new Vector2(this.width / 2, this.height / 2)
 
-        let screen = world.add(this.camera.position.cast())
-        return new Vector2(screen.x, -screen.y).mul(this.height / this.camera.size).add(dimensions)
-    }
+    //     let screen = world.add(this.camera.position.cast())
+    //     return new Vector2(screen.x, -screen.y).mul(this.height / this.camera.size).add(dimensions)
+    // }
 
     public init(): CanvasRenderingContext2D
     {
@@ -82,7 +82,7 @@ export class Camera extends Component
 {
 
     public get position(): Vector3 { return this.entity.position }
-    public get angle(): number { return this.entity.angle }
+    public get angle(): number { return 0 } // TODO: Projection matrix
 
     public size: number
 
@@ -93,5 +93,10 @@ export class Camera extends Component
     }
 
     public override init() { this.scene.renderer.camera = this } // Attach to renderer
+
+}
+
+export class Mesh extends Component
+{
 
 }
