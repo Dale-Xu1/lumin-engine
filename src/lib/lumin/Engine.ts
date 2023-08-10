@@ -1,8 +1,8 @@
 import { browser } from "$app/environment"
 
-import { Vector2 } from "./Math"
-import Entity, { Camera } from "./Entity"
+import { Vector2, Vector3 } from "./Math"
 import type PhysicsEngine from "./physics/PhysicsEngine"
+import type RenderEngine from "./render/RenderEngine"
 
 const DEBUG = true
 const MAX_DELAY = 200
@@ -61,18 +61,9 @@ export default class Engine
 export class Scene
 {
 
-    public readonly camera: Camera
     public readonly entities: Entity[] = []
 
-    public constructor(camera: Entity, public readonly physics: PhysicsEngine)
-    {
-        this.addEntity(camera)
-
-        let component = camera.getComponent(Camera)
-        if (component === null) throw new Error("Entity must have Camera component")
-
-        this.camera = component
-    }
+    public constructor(public readonly renderer: RenderEngine, public readonly physics: PhysicsEngine) { }
 
 
     public addEntity(entity: Entity)
@@ -89,24 +80,6 @@ export class Scene
         if (index >= 0) this.entities.splice(index, 1)
     }
 
-    public toWorldSpace(screen: Vector2): Vector2
-    {
-        let camera = this.camera
-        let dimensions = new Vector2(camera.width / 2, camera.height / 2)
-
-        let world = screen.sub(dimensions).div(camera.height / camera.size)
-        return new Vector2(world.x, -world.y).sub(camera.position)
-    }
-
-    public toScreenSpace(world: Vector2): Vector2
-    {
-        let camera = this.camera
-        let dimensions = new Vector2(camera.width / 2, camera.height / 2)
-
-        let screen = world.add(camera.position)
-        return new Vector2(screen.x, -screen.y).mul(camera.height / camera.size).add(dimensions)
-    }
-
     public update(delta: number)
     {
         for (let entity of this.entities) entity.update(delta)
@@ -116,13 +89,78 @@ export class Scene
     public render(alpha: number)
     {
         this.physics.preRender(alpha)
-        this.camera.reset()
 
-        let c = this.camera.context
+        let c = this.renderer.init()
         for (let entity of this.entities) entity.render(c, alpha)
 
         if (DEBUG) this.physics.debug(c)
     }
+
+}
+
+// TODO: Entity parenting
+// TODO: Quaternions for entity rotation
+
+interface Constructor<T> { new(...args: any[]): T }
+export class Entity
+{
+
+    public scene!: Scene
+
+    public constructor(public position: Vector3, public angle: number, public readonly components: Component[])
+    {
+        // Register components to this entity
+        for (let component of components) component.entity = this
+    }
+
+
+    public getComponent<T>(type: Constructor<T>): T | null
+    {
+        for (let component of this.components) if (component instanceof type) return component
+        return null
+    }
+
+    public addComponent(component: Component)
+    {
+        component.entity = this
+        this.components.push(component)
+    }
+
+    public removeComponent(component: Component)
+    {
+        let index = this.components.indexOf(component)
+        if (index >= 0) this.components.splice(index, 1)
+    }
+
+    public init() { for (let component of this.components) component.init() }
+    public update(delta: number) { for (let component of this.components) component.update(delta) }
+
+    public render(c: CanvasRenderingContext2D, alpha: number)
+    {
+        // Apply transformations
+        c.save()
+        c.translate(this.position.x, this.position.y)
+        c.rotate(this.angle)
+
+        for (let component of this.components) component.render(c, alpha)
+        c.restore()
+    }
+
+}
+
+export abstract class Component
+{
+
+    public entity!: Entity
+    public get scene(): Scene { return this.entity.scene }
+
+    protected getComponent<T>(type: Constructor<T>): T | null { return this.entity.getComponent(type) }
+
+
+    public init() { }
+
+    public update(delta: number) { }
+    public render(c: CanvasRenderingContext2D, alpha: number) { }
 
 }
 

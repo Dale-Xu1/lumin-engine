@@ -77,9 +77,9 @@ export default class ExampleScene extends Lumin.Scene
 
     public constructor()
     {
-        let camera = new Entity(Vector3.ZERO, 0, [Lumin.camera])
-        super(camera, new Lumin.PhysicsEngine())
+        super(Lumin.renderer, new Lumin.PhysicsEngine())
 
+        this.addEntity(new Entity(Vector3.ZERO, 0, [new Lumin.Camera()]))
         this.addEntity(new Entity(Vector3.ZERO, 0, [new AddBody()]))
 
         for (let i = 0; i < 50; i++)

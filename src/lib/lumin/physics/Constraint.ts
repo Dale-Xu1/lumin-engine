@@ -1,5 +1,5 @@
+import { Component } from "../Engine"
 import { Matrix2, Vector2 } from "../Math"
-import { Component } from "../Entity"
 import type RigidBody from "./RigidBody"
 import type Shape from "./Shape"
 
@@ -85,8 +85,8 @@ export default class Constraint extends Component
         c.strokeWidth = 1
 
         let [pointA, pointB] = this.localPoints
-        let u = this.a.entity.position.add(pointA)
-        let v = this.b.entity.position.add(pointB)
+        let u = this.a.entity.position.cast().add(pointA)
+        let v = this.b.entity.position.cast().add(pointB)
 
         c.beginPath()
         c.moveTo(u.x, u.y)

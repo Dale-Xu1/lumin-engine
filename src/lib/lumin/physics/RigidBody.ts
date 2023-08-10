@@ -1,5 +1,5 @@
+import { Component } from "../Engine"
 import { Vector2 } from "../Math"
-import { Component } from "../Entity"
 import type { Bounds } from "./Shape"
 import type Shape from "./Shape"
 

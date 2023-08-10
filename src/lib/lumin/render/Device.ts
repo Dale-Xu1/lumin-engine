@@ -1,6 +1,19 @@
 import type Resource from "./Resource"
 import { Buffer, Texture, TextureFormat } from "./Resource"
 
+export const enum StepMode { VERTEX = "vertex", INSTANCE = "instance" }
+export const enum VertexFormat
+{
+    I32 = "sint32",  I32_2 = "sint32x2",  I32_3 = "sint32x3",  I32_4 = "sint32x4",
+    U32 = "uint32",  U32_2 = "uint32x2",  U32_3 = "uint32x3",  U32_4 = "uint32x4",
+    F32 = "float32", F32_2 = "float32x2", F32_3 = "float32x3", F32_4 = "float32x4"
+}
+
+export const enum LoadOperation { CLEAR = "clear", LOAD = "load" }
+
+export const enum Primitive { POINT = "point-list", LINE = "line-list", TRIANGLE = "triangle-list" }
+export const enum CullMode { NONE = "none", FRONT = "front", BACK = "back" }
+
 export default class Device
 {
 
@@ -97,15 +110,6 @@ export abstract class PassDescriptor<T extends Pipeline<GPUPipelineBase, GPUBind
 
 }
 
-export const enum StepMode { VERTEX = "vertex", INSTANCE = "instance" }
-export const enum VertexFormat
-{
-    I32 = "sint32",  I32_2 = "sint32x2",  I32_3 = "sint32x3",  I32_4 = "sint32x4",
-    U32 = "uint32",  U32_2 = "uint32x2",  U32_3 = "uint32x3",  U32_4 = "uint32x4",
-    F32 = "float32", F32_2 = "float32x2", F32_3 = "float32x3", F32_4 = "float32x4"
-}
-
-export const enum LoadOperation { CLEAR = "clear", LOAD = "load" }
 export interface VertexFormatParams
 {
 
@@ -113,9 +117,6 @@ export interface VertexFormatParams
     step?: StepMode
 
 }
-
-export const enum Primitive { POINT = "point-list", LINE = "line-list", TRIANGLE = "triangle-list" }
-export const enum CullMode { NONE = "none", FRONT = "front", BACK = "back" }
 
 export interface RenderPipelineParams
 {
@@ -197,7 +198,7 @@ export class RenderPipeline implements Pipeline<GPURenderPipeline, GPURenderPass
                     blend: blend ?
                     {
                         color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
-                        alpha: { srcFactor: "one", dstFactor: "one" }
+                        alpha: {}
                     } : undefined
                 }]
             },

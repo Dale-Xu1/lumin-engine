@@ -1,5 +1,5 @@
 import Engine, { type Scene } from "./Engine"
-import type { Camera } from "./Entity"
+import type RenderEngine from "./render/RenderEngine"
 
 declare global
 {
@@ -10,9 +10,9 @@ declare global
 }
 
 export let engine: Engine = new Engine()
-export let camera: Camera
+export let renderer: RenderEngine
 
-export function init(c: Camera) { camera = c }
+export function init(r: RenderEngine) { renderer = r }
 
 let stack: Scene[] = []
 function current() { return stack[stack.length - 1] ?? null }
@@ -32,10 +32,11 @@ export function exit(): Scene | null
 } 
 
 export { default as Engine } from "./Engine"
-export { Input, Key, MouseButton, Scene } from "./Engine"
-export { default as Entity } from "./Entity"
-export { Component, Camera } from "./Entity"
-export { Matrix2, Matrix4, Vector2, Vector3 } from "./Math"
+export { Component, Entity, Input, Key, MouseButton, Scene } from "./Engine"
+export { Matrix2, Matrix4, Quaternion, Vector2, Vector3 } from "./Math"
+
+export { default as RenderEngine } from "./render/RenderEngine"
+export { Camera } from "./render/RenderEngine"
 
 export { default as PhysicsEngine } from "./physics/PhysicsEngine"
 export type { PhysicsParams } from "./physics/PhysicsEngine"

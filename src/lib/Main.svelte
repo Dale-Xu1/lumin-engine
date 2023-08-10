@@ -2,25 +2,25 @@
 import { onMount } from "svelte"
 
 import * as Lumin from "./lumin/Lumin"
-import ExampleScene from "./ExampleScene"
 import RenderEngine from "./lumin/render/RenderEngine"
+
+import RenderExample from "./RenderExample"
+import ExampleScene from "./ExampleScene"
 
 let canvas: HTMLCanvasElement
 onMount(() =>
 {
-    // let width = window.innerWidth, height = window.innerHeight
-    // Lumin.init(new Lumin.Camera(canvas, width, height))
+    let width = window.innerWidth, height = window.innerHeight
+    Lumin.init(new RenderEngine(canvas, width, height))
 
-    // Lumin.enter(new ExampleScene())
-    // Lumin.engine.start()
-
-    let renderer = new RenderEngine(canvas)
+    Lumin.enter(new RenderExample())
+    Lumin.engine.start()
 })
 
 function onResize()
 {
     let width = window.innerWidth, height = window.innerHeight
-    Lumin.camera.resize(width, height)
+    Lumin.renderer.resize(width, height)
 }
 
 </script>

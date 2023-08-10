@@ -4,6 +4,7 @@ export default interface Resource
 {
 
     getBinding(): GPUBindingResource
+    dispose(): void
 
 }
 
@@ -43,6 +44,7 @@ export class Buffer implements Resource
     }
 
     public getBinding(): GPUBindingResource { return { buffer: this.buffer } }
+    public dispose() { this.buffer.destroy() }
 
 }
 
@@ -62,6 +64,14 @@ export const enum TextureFormat
     R_F32    = "r32float", RG_F32    = "rg32float", RGBA_F32    = "rgba32float",
 
     DEPTH24 = "depth24plus", DEPTH32 = "depth32float", DEPTH24_STENCIL8 = "depth24plus-stencil8"
+}
+
+export interface TextureParams
+{
+
+    samples?: number
+    mips?: number
+
 }
 
 type TextureData =
@@ -88,6 +98,7 @@ export class Texture implements Resource
             case TextureFormat.RGBA_U8:    case TextureFormat.RGBA_I8:
             case TextureFormat.RG_U16:     case TextureFormat.RG_I16:   case TextureFormat.RG_F16:
             case TextureFormat.R_U32:      case TextureFormat.R_I32:    case TextureFormat.R_F32:
+
             case TextureFormat.DEPTH24:    case TextureFormat.DEPTH32:  case TextureFormat.DEPTH24_STENCIL8:
                 return 4
 
@@ -111,9 +122,10 @@ export class Texture implements Resource
 
     public constructor(device: Device, texture: GPUTexture)
     public constructor(device: Device, format: TextureFormat, usage: GPUTextureUsageFlags,
-        size: [number, number?, number?], samples?: number)
-    public constructor({ device }: Device, texture: GPUTexture | TextureFormat,
-        usage?: GPUTextureUsageFlags, size?: [number, number?, number?], samples?: number)
+        size: [number, number?, number?], params: TextureParams)
+
+    public constructor({ device }: Device, texture: GPUTexture | TextureFormat, usage?: GPUTextureUsageFlags,
+        size?: [number, number?, number?], { samples, mips }: TextureParams = {})
     {
         this.device = device
         if (typeof(texture) === "string")
@@ -121,7 +133,13 @@ export class Texture implements Resource
             let format = texture, [x, y = 1, z = 1] = size!
 
             this.size = [x, y, z]
-            this.texture = device.createTexture({ size: this.size, format, usage: usage!, sampleCount: samples })
+            this.texture = device.createTexture(
+            {
+                size: this.size,
+                format, usage: usage!,
+                sampleCount: samples,
+                mipLevelCount: mips
+            })
         }
         else
         {
@@ -130,13 +148,15 @@ export class Texture implements Resource
         }
     }
 
-    public write(data: TextureData)
+    public write(data: TextureData, mip?: number)
     {
         let width = this.size[0] * Texture.getBytes(this.format)
-        this.device.queue.writeTexture({ texture: this.texture }, data, { bytesPerRow: width }, this.size)
+        this.device.queue.writeTexture({ texture: this.texture, mipLevel: mip }, data,
+            { bytesPerRow: width }, this.size)
     }
 
     public getBinding(): GPUBindingResource { return this.view }
+    public dispose() { this.texture.destroy() }
 
 }
 
@@ -146,13 +166,13 @@ export const enum SamplerFilterMode { NEAREST = "nearest", LINEAR = "linear" }
 export interface SamplerParams
 {
 
-    addressU?: SamplerAddressMode
-    addressV?: SamplerAddressMode
-    addressW?: SamplerAddressMode
+    u?: SamplerAddressMode
+    v?: SamplerAddressMode
+    w?: SamplerAddressMode
 
     mag?: SamplerFilterMode
     min?: SamplerFilterMode
-    mipmap?: SamplerFilterMode
+    mip?: SamplerFilterMode
 
 }
 
@@ -163,22 +183,18 @@ export class Sampler implements Resource
 
     public constructor({ device }: Device,
     {
-        addressU = SamplerAddressMode.CLAMP,
-        addressV = SamplerAddressMode.CLAMP,
-        addressW = SamplerAddressMode.CLAMP,
-
-        mag = SamplerFilterMode.NEAREST,
-        min = SamplerFilterMode.NEAREST,
-        mipmap = SamplerFilterMode.NEAREST
+        u = SamplerAddressMode.CLAMP, v = SamplerAddressMode.CLAMP, w = SamplerAddressMode.CLAMP,
+        mag = SamplerFilterMode.NEAREST, min = SamplerFilterMode.NEAREST, mip = SamplerFilterMode.NEAREST
     }: SamplerParams = {})
     {
         this.sampler = device.createSampler(
         {
-            addressModeU: addressU, addressModeV: addressV, addressModeW: addressW,
-            magFilter: mag, minFilter: min, mipmapFilter: mipmap
+            addressModeU: u, addressModeV: v, addressModeW: w,
+            magFilter: mag, minFilter: min, mipmapFilter: mip
         })
     }
 
     public getBinding(): GPUBindingResource { return this.sampler }
+    public dispose() { }
 
 }
