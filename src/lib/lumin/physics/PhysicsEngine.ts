@@ -21,8 +21,8 @@ export interface PhysicsParams
 export default class PhysicsEngine
 {
 
-    public readonly bodies: RigidBody<Shape>[] = []
-    public readonly constraints: Constraint[] = []
+    private readonly bodies: RigidBody<Shape>[] = []
+    private readonly constraints: Constraint[] = []
 
     private readonly gravity: Vector2
 
@@ -43,6 +43,20 @@ export default class PhysicsEngine
         this.iterations = iterations
         this.positionIterations = positionIterations
         this.rate = correctionRate
+    }
+
+    public addBody(body: RigidBody<Shape>) { this.bodies.push(body) }
+    public removeBody(body: RigidBody<Shape>)
+    {
+        let index = this.bodies.indexOf(body)
+        if (index >= 0) this.bodies.splice(index, 1)
+    }
+
+    public addConstraint(constraint: Constraint) { this.constraints.push(constraint) }
+    public removeConstraint(constraint: Constraint)
+    {
+        let index = this.constraints.indexOf(constraint)
+        if (index >= 0) this.constraints.splice(index, 1)
     }
 
 

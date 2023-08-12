@@ -8,10 +8,10 @@ import RenderExample from "./RenderExample"
 import ExampleScene from "./ExampleScene"
 
 let canvas: HTMLCanvasElement
-onMount(() =>
+onMount(async () =>
 {
     let width = window.innerWidth, height = window.innerHeight
-    Lumin.init(new RenderEngine(canvas, width, height))
+    Lumin.init(await RenderEngine.init(canvas, width, height))
 
     Lumin.enter(new RenderExample())
     Lumin.engine.start()

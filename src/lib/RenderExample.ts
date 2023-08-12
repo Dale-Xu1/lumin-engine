@@ -9,9 +9,9 @@ class TestComponent extends Lumin.Component
         this.entity.rotation = this.entity.rotation.mul(Quaternion.rotate(0.01))
     }
 
-    public override render(c: CanvasRenderingContext2D)
+    public override render()
     {
-        c.fillRect(0, 0, 1, 1)
+        // c.fillRect(0, 0, 1, 1)
     }
 
 }

@@ -2,6 +2,7 @@ export class Vector2
 {
 
     public static readonly ZERO:  Vector2 = new Vector2( 0,  0)
+    public static readonly ONE:   Vector2 = new Vector2( 1,  1)
 
     public static readonly UP:    Vector2 = new Vector2( 0,  1)
     public static readonly DOWN:  Vector2 = new Vector2( 0, -1)
@@ -43,6 +44,7 @@ export class Vector3
 {
 
     public static readonly ZERO:    Vector3 = new Vector3( 0,  0,  0)
+    public static readonly ONE:     Vector3 = new Vector3( 1,  1,  1)
 
     public static readonly UP:      Vector3 = new Vector3( 0,  1,  0)
     public static readonly DOWN:    Vector3 = new Vector3( 0, -1,  0)
@@ -275,6 +277,30 @@ export class Matrix4
             xy + wz,       1 - (xx + zz), yz - wx,       0,
             xz - wy,       yz + wx,       1 - (xx + yy), 0,
             0,             0,             0,             1
+        )
+    }
+
+    public static orthographic(width: number, height: number, [near, far]: [number, number]): Matrix4
+    {
+        let range = far - near
+        return new Matrix4(
+            2 / width, 0,          0,          0,
+            0,         2 / height, 0,          0,
+            0,         0,          1 / range, -near / range,
+            0,         0,          0,          1
+        )
+    }
+
+    public static perspective(fov: number, aspect: number, [near, far]: [number, number]): Matrix4
+    {
+        let f = 1 / Math.tan(fov / 2)
+        let q = far / (far - near)
+
+        return new Matrix4(
+            f / aspect, 0, 0,  0,
+            0,          f, 0,  0,
+            0,          0, q, -near * q,
+            0,          0, 1,  0
         )
     }
 

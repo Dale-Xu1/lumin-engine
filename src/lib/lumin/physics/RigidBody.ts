@@ -1,5 +1,5 @@
 import { Component } from "../Engine"
-import { Matrix4, Quaternion, Vector2 } from "../Math"
+import { Quaternion, Vector2 } from "../Math"
 import type { Bounds } from "./Shape"
 import type Shape from "./Shape"
 
@@ -80,10 +80,12 @@ export default class RigidBody<T extends Shape> extends Component
     public override init()
     {
         this.previousPosition = this.position = this.entity.position.cast()
-        this.previousAngle = this.angle = this.entity.euler.z
+        this.previousAngle = this.angle = this.entity.rotation.euler.z
 
-        this.scene.physics.bodies.push(this)
+        this.scene.physics.addBody(this)
     }
+
+    public override destroy() { this.scene.physics.removeBody(this) }
 
     public is<T extends Shape>(shape: Constructor<T>): this is RigidBody<T> { return this.shape instanceof shape }
 
@@ -136,7 +138,7 @@ export default class RigidBody<T extends Shape> extends Component
     private staticUpdate()
     {
         this.position = this.entity.position.cast()
-        this.angle = this.entity.euler.z
+        this.angle = this.entity.rotation.euler.z
     }
 
     public getBounds(): Bounds { return this.shape.getBounds(this) }
@@ -158,9 +160,8 @@ export default class RigidBody<T extends Shape> extends Component
         // Apply transformations
         c.save()
         c.translate(this.entity.position.x, this.entity.position.y)
-        c.rotate(this.entity.euler.z)
+        c.rotate(this.entity.rotation.euler.z)
 
-        // TODO: Move debug lines to new rendering engine
         this.shape.render(c)
         c.restore()
     }

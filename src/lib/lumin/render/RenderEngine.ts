@@ -1,87 +1,103 @@
 import { Component } from "../Engine"
-import type { Vector3 } from "../Math"
+import { Matrix4, Quaternion, Vector3 } from "../Math"
+import Device, { RenderPass, RenderPipeline, Shader, VertexFormat } from "./Device"
+import { Buffer } from "./Resource"
+
+import test from "./shaders/Test.wgsl?raw"
 
 export default class RenderEngine
 {
 
-    public readonly context: CanvasRenderingContext2D
-    public camera!: Camera
-
-    public width!: number
-    public height!: number
-
-    public constructor(public readonly canvas: HTMLCanvasElement, width: number, height: number)
+    public static async init(canvas: HTMLCanvasElement, width: number, height: number)
     {
-        // Define custom setter "strokeWidth" that sets lineWidth relative to camera scale
-        this.context = canvas.getContext("2d")!
-        Object.defineProperty(this.context, "strokeWidth",
-        {
-            set: value => this.context.lineWidth = value * this.camera.size / this.height
-        })
+        let device = await Device.init(canvas)
+        let renderer = new RenderEngine(device, canvas)
 
-        this.resize(width, height)
+        renderer.resize(width, height)
+        return renderer
+    }
+
+    public get width(): number { return this.canvas.width }
+    public get height(): number { return this.canvas.height }
+
+    protected constructor(private readonly device: Device, private readonly canvas: HTMLCanvasElement)
+    {
+        this.pipeline = new RenderPipeline(device, new Shader(device, test), device.texture.format,
+            [{ format: VertexFormat.F32_3 }])
+
+        this.view = new Buffer(device, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, 16)
+
+        let vertices = new Buffer(device, GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST, 12)
+        vertices.write(new Float32Array(
+        [
+            [-1, -1, 0],
+            [ 1, -1, 0],
+            [ 1,  1, 0],
+            [-1,  1, 0]
+        ].flat()))
+
+        let indices = new Buffer(device, GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST, 6)
+        indices.write(new Uint32Array(
+        [
+            0, 1, 2,
+            0, 2, 3
+        ]))
+
+        this.pass = new RenderPass(this.pipeline, [[this.view]], [vertices], indices)
+    }
+
+    private camera!: Camera
+    public attachCamera(camera: Camera)
+    {
+        this.camera = camera
+        camera.resize(this.width / this.height)
     }
 
     public resize(width: number, height: number)
     {
-        this.width = width
-        this.height = height
-
         let ratio = window.devicePixelRatio
 
         this.canvas.width = width * ratio
         this.canvas.height = height * ratio
 
-        this.context.scale(ratio, ratio)
+        if (this.camera) this.camera.resize(width / height)
+
+        let m = Matrix4.perspective(Math.PI / 3, width / height, [1, 10])
+        // let m = Matrix4.orthographic(3 * width / height, 3, [0, 10])
+            .mul(Matrix4.translate(new Vector3(0, 0, -5)).inverse())
+            .mul(Matrix4.rotate(Quaternion.rotate(1, Vector3.UP)))
+        this.view.write(new Float32Array(
+        [
+            m.m00, m.m10, m.m20, m.m30,
+            m.m01, m.m11, m.m21, m.m31,
+            m.m02, m.m12, m.m22, m.m32,
+            m.m03, m.m13, m.m23, m.m33
+        ]))
     }
 
 
-    // public toWorldSpace(screen: Vector2): Vector2
-    // {
-    //     let dimensions = new Vector2(this.width / 2, this.height / 2)
-
-    //     let world = screen.sub(dimensions).div(this.height / this.camera.size)
-    //     return new Vector2(world.x, -world.y).sub(this.camera.position.cast())
-    // }
-
-    // public toScreenSpace(world: Vector2): Vector2
-    // {
-    //     let dimensions = new Vector2(this.width / 2, this.height / 2)
-
-    //     let screen = world.add(this.camera.position.cast())
-    //     return new Vector2(screen.x, -screen.y).mul(this.height / this.camera.size).add(dimensions)
-    // }
-
-    public init(): CanvasRenderingContext2D
-    {
-        let c = this.context
-        c.restore()
-        c.save()
-        c.clearRect(0, 0, this.width, this.height)
-
-        // Center origin
-        c.translate(this.width / 2, this.height / 2)
-
-        // Apply transformations
-        let position = this.camera.position.neg()
-        let scale = this.height / this.camera.size
-
-        c.scale(scale, -scale)
-        c.rotate(-this.camera.angle)
-        c.translate(position.x, position.y)
-
-        return this.context
-    }
+    private pipeline: RenderPipeline
+    private pass: RenderPass
+    private view: Buffer
 
     // TODO: Draw call to render pass conversion
+    public render()
+    {
+        this.pipeline.start(this.device.texture)
+        this.pass.render(6)
+        this.pipeline.end()
+
+        this.device.submit()
+    }
+
+    // TODO: Reimplement coordinate conversions
+    // public toWorldSpace(screen: Vector2): Vector2
+    // public toScreenSpace(world: Vector2): Vector2
 
 }
 
 export class Camera extends Component
 {
-
-    public get position(): Vector3 { return this.entity.position }
-    public get angle(): number { return 0 } // TODO: Projection matrix
 
     public size: number
 
@@ -91,11 +107,21 @@ export class Camera extends Component
         this.size = size
     }
 
-    public override init() { this.scene.renderer.camera = this } // Attach to renderer
+
+    public override init() { this.scene.renderer.attachCamera(this) } // Attach to renderer
+    public resize(aspect: number)
+    {
+
+    }
 
 }
 
-export class Mesh extends Component
+export class Mesh
+{
+
+}
+
+export class Material
 {
 
 }

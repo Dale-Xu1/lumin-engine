@@ -25,29 +25,29 @@ class Control extends Lumin.Component
         this.body.applyTorque(angle * 5)
     }
 
-    public override render(c: CanvasRenderingContext2D)
-    {
-        let t = c.getTransform()
-        c.restore()
+    // public override render(c: CanvasRenderingContext2D)
+    // {
+    //     let t = c.getTransform()
+    //     c.restore()
 
-        let intersection = this.scene.physics.testRay(new Ray(this.entity.position.cast(), Matrix2.rotate(this.entity.euler.z).vmul(Vector2.DOWN)))
-        if (intersection !== null)
-        {
-            c.strokeStyle = "red"
-            c.strokeWidth = 1
+    //     let intersection = this.scene.physics.testRay(new Ray(this.entity.position.cast(), Matrix2.rotate(this.entity.euler.z).mul(Vector2.DOWN)))
+    //     if (intersection !== null)
+    //     {
+    //         c.strokeStyle = "red"
+    //         c.strokeWidth = 1
 
-            let u = this.entity.position
-            let v = intersection.position
+    //         let u = this.entity.position
+    //         let v = intersection.position
 
-            c.beginPath()
-            c.moveTo(u.x, u.y)
-            c.lineTo(v.x, v.y)
-            c.stroke()
-        }
+    //         c.beginPath()
+    //         c.moveTo(u.x, u.y)
+    //         c.lineTo(v.x, v.y)
+    //         c.stroke()
+    //     }
 
-        c.save()
-        c.setTransform(t)
-    }
+    //     c.save()
+    //     c.setTransform(t)
+    // }
 
 }
 

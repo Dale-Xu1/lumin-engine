@@ -1,6 +1,6 @@
 import { browser } from "$app/environment"
 
-import { Matrix4, Quaternion, Vector2, Vector3 } from "./Math"
+import { Quaternion, Vector2, Vector3 } from "./Math"
 import type PhysicsEngine from "./physics/PhysicsEngine"
 import type RenderEngine from "./render/RenderEngine"
 
@@ -61,25 +61,32 @@ export default class Engine
 export class Scene
 {
 
-    public readonly entities: Entity[] = []
+    private readonly entities: Entity[] = []
 
     public constructor(public readonly renderer: RenderEngine, public readonly physics: PhysicsEngine) { }
 
 
     public addEntity(entity: Entity)
     {
-        entity.scene = this
         this.entities.push(entity)
 
+        entity.scene = this
         entity.init()
     }
 
     public removeEntity(entity: Entity)
     {
         let index = this.entities.indexOf(entity)
-        if (index >= 0) this.entities.splice(index, 1)
+        if (index >= 0)
+        {
+            let entity = this.entities[index]
+            this.entities.splice(index, 1)
+
+            entity.destroy()
+        }
     }
 
+    public destroy() { for (let entity of this.entities) entity.destroy() }
     public update(delta: number)
     {
         for (let entity of this.entities) entity.fixedUpdate(delta)
@@ -90,10 +97,11 @@ export class Scene
     {
         for (let entity of this.entities) entity.update(alpha)
 
-        let c = this.renderer.init()
-        for (let entity of this.entities) entity.render(c)
+        for (let entity of this.entities) entity.render()
+        this.renderer.render()
 
-        if (DEBUG) this.physics.debug(c)
+        // TODO: Move debug lines to new rendering engine
+        // if (DEBUG) this.physics.debug(c)
     }
 
 }
@@ -106,6 +114,7 @@ export interface EntityParams
 
     position?: Vector3
     rotation?: Quaternion
+    scale?   : Vector3
 
 }
 
@@ -116,17 +125,17 @@ export class Entity
 
     public position: Vector3
     public rotation: Quaternion
+    public scale:    Vector3
 
-    public get euler(): Vector3 { return this.rotation.euler }
-
-    public constructor(public readonly components: Component[],
-        { position = Vector3.ZERO, rotation = Quaternion.IDENTITY }: EntityParams = {})
+    public constructor(private readonly components: Component[],
+        { position = Vector3.ZERO, rotation = Quaternion.IDENTITY, scale = Vector3.ONE }: EntityParams = {})
     {
         // Register components to this entity
         for (let component of components) component.entity = this
 
         this.position = position
         this.rotation = rotation
+        this.scale = scale
     }
 
 
@@ -138,36 +147,38 @@ export class Entity
 
     public addComponent(component: Component)
     {
-        component.entity = this
         this.components.push(component)
+        component.entity = this
     }
 
     public removeComponent(component: Component)
     {
         let index = this.components.indexOf(component)
-        if (index >= 0) this.components.splice(index, 1)
+        if (index >= 0)
+        {
+            let component = this.components[index]
+            this.components.splice(index, 1)
+
+            component.destroy()
+        }
     }
 
     // Entity lifecycle
-    public init() { for (let component of this.components) component.init() }
+    public init()    { for (let component of this.components) component.init() }
+    public destroy() { for (let component of this.components) component.destroy() }
 
     public fixedUpdate(delta: number) { for (let component of this.components) component.fixedUpdate(delta) }
     public update(alpha: number)      { for (let component of this.components) component.update(alpha) }
 
-    public render(c: CanvasRenderingContext2D)
+    public render()
     {
-        // Apply transformations
-        c.save()
-        c.translate(this.position.x, this.position.y)
-        c.rotate(this.euler.z)
-
-        let transform = Matrix4.rotate(this.rotation)
-        c.transform(transform.m00, transform.m10, transform.m01, transform.m11, this.position.x, this.position.y)
+        // // Apply transformations
+        // c.save()
         // c.translate(this.position.x, this.position.y)
-        // c.rotate(this.angle)
+        // c.rotate(this.euler.z)
 
-        for (let component of this.components) component.render(c)
-        c.restore()
+        for (let component of this.components) component.render()
+        // c.restore()
     }
 
 }
@@ -182,11 +193,12 @@ export abstract class Component
 
 
     public init() { }
+    public destroy() { }
 
     public fixedUpdate(delta: number) { }
     public update(alpha: number) { }
 
-    public render(c: CanvasRenderingContext2D) { }
+    public render() { }
 
 }
 
