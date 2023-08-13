@@ -164,7 +164,7 @@ export class RenderPipeline implements Pipeline<GPURenderPipeline, GPURenderPass
         vertices: VertexFormatParams[],
     {
         vertex = "vs", fragment = "fs",
-        primitive = Primitive.TRIANGLE, cull = CullMode.BACK,
+        primitive = Primitive.TRIANGLE, cull = CullMode.NONE,
         depth, samples, blend = false
     }: RenderPipelineParams = {})
     {

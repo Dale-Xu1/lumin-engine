@@ -9,10 +9,11 @@ export default interface Resource
 
 }
 
-type BufferData = Int32Array | Uint32Array | Float32Array
-type Data = number | Vector2 | Vector3 | Color4 | Matrix2 | Matrix4
-
 export const enum BufferFormat { I32, U32, F32 }
+export type BufferData = Int32Array | Uint32Array | Float32Array
+
+type Data = number | Vector2 | Vector3 | Color4 | Matrix2 | Matrix4
+const ELEMENT_SIZE = 4
 
 export class Buffer implements Resource
 {
@@ -51,26 +52,14 @@ export class Buffer implements Resource
 
     public readonly length: number
 
-    public constructor(device: Device, usage: GPUBufferUsageFlags, length: number)
-    public constructor(device: Device, buffer: GPUBuffer)
-    public constructor({ device }: Device, buffer: GPUBuffer | GPUBufferUsageFlags, length?: number)
+    public constructor({ device }: Device, usage: GPUBufferUsageFlags, length: number)
     {
-        const ELEMENT_SIZE = 4
-
         this.device = device
-        if (typeof(buffer) === "number")
-        {
-            let usage = buffer
 
-            this.length = length!
-            this.buffer = device.createBuffer({ size: ELEMENT_SIZE * this.length, usage })
-        }
-        else
-        {
-            this.buffer = buffer
-            this.length = buffer.size / ELEMENT_SIZE
-        }
+        this.length = length
+        this.buffer = device.createBuffer({ size: ELEMENT_SIZE * length, usage })
     }
+
 
     public write(data: BufferData, offset: number = 0)
     {
@@ -145,7 +134,6 @@ export class Texture implements Resource
         }
     }
 
-
     private readonly device: GPUDevice
     public readonly texture: GPUTexture
 
@@ -181,6 +169,7 @@ export class Texture implements Resource
             this.size = [texture.width, texture.height, texture.depthOrArrayLayers]
         }
     }
+
 
     public write(data: TextureData, mip?: number)
     {

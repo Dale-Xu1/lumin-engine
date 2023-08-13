@@ -141,8 +141,6 @@ export class Entity
     public rotation: Quaternion
     public scale: Vector3
 
-    public transform!: Matrix4
-
     public constructor(private readonly components: Component[],
         { position = Vector3.ZERO, rotation = Quaternion.IDENTITY, scale = Vector3.ONE }: EntityParams = {})
     {
@@ -196,6 +194,9 @@ export class Entity
     public fixedUpdate(delta: number) { for (let component of this.components) component.fixedUpdate(delta) }
     public update(alpha: number)      { for (let component of this.components) component.update(alpha) }
 
+    public transform!: Matrix4
+    public normal!: Matrix4
+
     public render()
     {
         let transform = Matrix4.translate(this.position)
@@ -203,6 +204,8 @@ export class Entity
         if (!this.scale.equals(Vector3.ONE)) transform = transform.mul(Matrix4.scale(this.scale))
 
         this.transform = transform
+        this.normal = transform.inverse().transpose()
+
         for (let component of this.components) component.render()
     }
 

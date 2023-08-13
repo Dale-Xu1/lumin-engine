@@ -1,7 +1,6 @@
 import * as Lumin from "./lumin/Lumin"
 import { Entity, Quaternion, Vector3 } from "./lumin/Lumin"
 import { Material, Mesh, MeshRenderer } from "./lumin/render/RenderEngine"
-import { Buffer, BufferFormat } from "./lumin/render/Resource"
 
 import test from "./lumin/render/shaders/Test.wgsl?raw"
 
@@ -22,20 +21,10 @@ class TestComponent extends Lumin.Component
         this.entity.addComponent(new MeshRenderer(mesh, material))
     }
 
+    private q: Quaternion = Quaternion.rotate(0.02, new Vector3(Math.random(), Math.random(), Math.random()).normalize())
     public override update()
     {
-        this.entity.rotation = this.entity.rotation.mul(Quaternion.rotate(0.01))
-    }
-
-    public override render()
-    {
-        let renderer = this.getComponent(MeshRenderer)!
-        renderer.setUniform("view", GPUBufferUsage.UNIFORM, Buffer.flatten(BufferFormat.F32,
-            [this.scene.renderer.camera.view]))
-
-        renderer.material.pipeline.start(this.scene.renderer.device.texture)
-        renderer.pass.render(6)
-        renderer.material.pipeline.end()
+        this.entity.rotation = this.entity.rotation.mul(this.q)
     }
 
 }
@@ -47,8 +36,8 @@ export default class RenderExample extends Lumin.Scene
     {
         super(Lumin.renderer, new Lumin.PhysicsEngine())
 
-        this.addEntity(new Entity([new Lumin.Camera()]))
-        this.addEntity(new Entity([new TestComponent()]))
+        this.addEntity(new Entity([new Lumin.Camera(5)]))
+        this.addEntity(new Entity([new TestComponent()], { position: new Vector3(0, 0, 10) }))
     }
 
 }

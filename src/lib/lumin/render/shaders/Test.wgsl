@@ -9,12 +9,13 @@ struct FragmentInput
 };
 
 @group(0) @binding(0) var<uniform> view: mat4x4f;
+@group(0) @binding(1) var<uniform> transform: mat4x4f;
 
 @vertex
 fn vs(input: VertexInput) -> FragmentInput
 {
     var output: FragmentInput;
-    output.position = view * vec4f(input.position, 1);
+    output.position = view * transform * vec4f(input.position, 1);
 
     return output;
 }

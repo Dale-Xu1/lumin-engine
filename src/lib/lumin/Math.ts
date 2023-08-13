@@ -367,6 +367,16 @@ export class Matrix4
         return new Vector3(x, y, z)
     }
 
+    public wmul(v: Vector3, w: number = 1): Vector3
+    {
+        let x = this.m00 * v.x + this.m01 * v.y + this.m02 * v.z + this.m03 * w
+        let y = this.m10 * v.x + this.m11 * v.y + this.m12 * v.z + this.m13 * w
+        let z = this.m20 * v.x + this.m21 * v.y + this.m22 * v.z + this.m23 * w
+
+        let d = this.m30 * v.x + this.m31 * v.y + this.m32 * v.z + this.m33 * w
+        return new Vector3(x, y, z).div(d)
+    }
+
     public transpose(): Matrix4
     {
         return new Matrix4(
