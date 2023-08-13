@@ -44,6 +44,7 @@ export default class Engine
         this.accumulated += now - this.previous
         this.previous = now
 
+        this.scene?.start()
         if (this.accumulated > MAX_DELAY) this.accumulated = MAX_DELAY // Prevent spiral of death
         while (this.accumulated > delay)
         {
@@ -66,13 +67,14 @@ export class Scene
     public constructor(public readonly renderer: RenderEngine, public readonly physics: PhysicsEngine) { }
 
 
+    private newEntities: Entity[] = []
     public addEntity(entity: Entity)
     {
         if (entity.scene) throw new Error("Entity is already attached to a scene")
-        this.entities.push(entity)
-
         entity.scene = this
-        entity.init()
+
+        this.entities.push(entity)
+        this.newEntities.push(entity) // Defer init call to start of update cycle
     }
 
     public removeEntity(entity: Entity)
@@ -88,6 +90,17 @@ export class Scene
     }
 
     public destroy() { for (let entity of this.entities) entity.destroy() }
+    public start()
+    {
+        if (this.newEntities.length === 0) return
+
+        for (let entity of this.newEntities) entity.init()
+        this.newEntities = []
+
+        for (let entity of this.entities) entity.start() // Initialize new components
+        this.start() // Recurse because of possibility a component added a new entity
+    }
+
     public update(delta: number)
     {
         for (let entity of this.entities) entity.fixedUpdate(delta)
@@ -148,12 +161,14 @@ export class Entity
         return null
     }
 
+    private newComponents: Component[] = []
     public addComponent(component: Component)
     {
         if (component.entity) throw new Error("Component is already attached to an entity")
+        component.entity = this
 
         this.components.push(component)
-        component.entity = this
+        this.newComponents.push(component)
     }
 
     public removeComponent(component: Component)
@@ -169,7 +184,13 @@ export class Entity
     }
 
     // Entity lifecycle
-    public init()    { for (let component of this.components) component.init() }
+    public init() { for (let component of this.components) component.init() }
+    public start()
+    {
+        for (let component of this.newComponents) component.init()
+        this.newComponents = []
+    }
+
     public destroy() { for (let component of this.components) component.destroy() }
 
     public fixedUpdate(delta: number) { for (let component of this.components) component.fixedUpdate(delta) }

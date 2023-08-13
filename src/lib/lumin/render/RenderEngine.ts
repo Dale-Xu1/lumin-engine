@@ -1,9 +1,7 @@
 import { Component } from "../Engine"
-import { Color4, Matrix2, Matrix4, Vector2, Vector3 } from "../Math"
+import { Matrix4, Vector3 } from "../Math"
 import Device, { RenderPass, RenderPipeline, Shader, VertexFormat } from "./Device"
 import { Buffer, BufferFormat } from "./Resource"
-
-import test from "./shaders/Test.wgsl?raw"
 
 export default class RenderEngine
 {
@@ -20,24 +18,10 @@ export default class RenderEngine
     public get width(): number { return this.canvas.width }
     public get height(): number { return this.canvas.height }
 
-    private constructor(public readonly device: Device, private readonly canvas: HTMLCanvasElement)
-    {
-        let material = new Material(this, test)
-        let mesh = new Mesh(this,
-        [
-            new Vector3(-1, -1, 0),
-            new Vector3( 1, -1, 0),
-            new Vector3( 1,  1, 0),
-            new Vector3(-1,  1, 0)
-        ], [0, 1, 2, 0, 2, 3])
+    private constructor(public readonly device: Device, private readonly canvas: HTMLCanvasElement) { }
 
-        this.pipeline = material.pipeline
 
-        this.view = new Buffer(device, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, 16)
-        this.pass = new RenderPass(this.pipeline, [[this.view]], [mesh.vertex], mesh.index!)
-    }
-
-    private camera!: Camera
+    public camera!: Camera
     public attachCamera(camera: Camera)
     {
         this.camera = camera
@@ -54,20 +38,9 @@ export default class RenderEngine
         if (this.camera) this.camera.resize(width / height)
     }
 
-
-    private pipeline: RenderPipeline
-    private pass: RenderPass
-    private view: Buffer
-
-    // TODO: Draw call to render pass conversion
     public render()
     {
-        this.view.write(Buffer.flatten(BufferFormat.F32, [this.camera.view]))
-
-        this.pipeline.start(this.device.texture)
-        this.pass.render(6)
-        this.pipeline.end()
-
+        // TODO: Draw call to render pass conversion
         this.device.submit()
     }
 
@@ -123,25 +96,52 @@ export class Camera extends Component
 export class MeshRenderer extends Component
 {
 
-    public uniforms!: BufferMap
-    private pass!: RenderPass
+    private uniforms!: BufferMap // TODO: More general ResourceMap
+    public pass!: RenderPass // TODO: TEMPORARY PUBLIC FOR TESTING
 
-    public constructor(public mesh: Mesh, public material: Material) { super() }
-    public override init(): void
+    public constructor(public readonly mesh: Mesh, public material: Material)
     {
-        this.uniforms = new BufferMap(this.scene.renderer)
-        // this.pass = new RenderPass(this.material.pipeline, )
-
-        // TODO: Create render pass from material and mesh
-        // TODO: Recreate pass when mesh or uniform map destroys buffer
+        super()
+        this.uniforms = new BufferMap(material.renderer)
     }
 
-    public override destroy() { this.uniforms.destroy() }
+    public override init(): void
+    {
+        // TODO: Reconstruct references when mesh reference is changed
+        this.mesh.addRenderer(this)
 
+        // TODO: Allocate buffer without writing data
+        this.uniforms.setBuffer("view", GPUBufferUsage.UNIFORM, Buffer.flatten(BufferFormat.F32, [Matrix4.ZERO]))
+        this.refresh()
+    }
+
+    public refresh()
+    {
+        // TODO: Special case for group index 0
+        let bindings = this.material.uniforms.map(group => group.map(name => this.uniforms.getBuffer(name)!))
+        let vertices = this.material.buffers.map(name => this.mesh.getAttribute(name)!)
+
+        let index = this.mesh.getAttribute(INDEX_ID) ?? undefined
+        this.pass = new RenderPass(this.material.pipeline, bindings, vertices, index)
+    }
+
+    public override destroy()
+    {
+        this.mesh.removeRenderer(this)
+        this.uniforms.destroy()
+    }
+
+
+    public getUniform(name: string): Buffer | null { return this.uniforms.getBuffer(name) }
+    public setUniform(name: string, flags: GPUBufferUsageFlags, data: BufferData)
+    {
+        let updated = this.uniforms.setBuffer(name, flags, data)
+        if (updated) this.refresh()
+    }
 
     public override render()
     {
-
+        // TODO: Send data to render engine
     }
 
 }
@@ -153,6 +153,7 @@ export class Mesh
 {
 
     private readonly attributes: BufferMap
+    private readonly renderers: MeshRenderer[] = [] // All components dependent on this mesh
 
     public vertices!: Vector3[]
     public get vertex(): Buffer { return this.getAttribute(VERTEX_ID)! }
@@ -167,7 +168,7 @@ export class Mesh
     public set index(indices: number[])
     {
         this.indices = indices
-        this.setAttribute(INDEX_ID, new Uint32Array(indices), GPUBufferUsage.INDEX)
+        this.attributes.setBuffer(INDEX_ID, GPUBufferUsage.INDEX, new Uint32Array(indices))
     }
 
 
@@ -181,10 +182,18 @@ export class Mesh
 
     public destroy() { this.attributes.destroy() }
 
-    public getAttribute(name: string): Buffer | null { return this.attributes.getBuffer(name) }
-    public setAttribute(name: string, data: BufferData, flags: GPUBufferUsageFlags = GPUBufferUsage.VERTEX)
+    public addRenderer(renderer: MeshRenderer) { this.renderers.push(renderer) }
+    public removeRenderer(renderer: MeshRenderer)
     {
-        this.attributes.setBuffer(name, flags, data)
+        let index = this.renderers.indexOf(renderer)
+        if (index >= 0) this.renderers.splice(index, 1)
+    }
+
+    public getAttribute(name: string): Buffer | null { return this.attributes.getBuffer(name) }
+    public setAttribute(name: string, data: BufferData, flags: GPUBufferUsageFlags = 0)
+    {
+        let updated = this.attributes.setBuffer(name, flags | GPUBufferUsage.VERTEX, data)
+        if (updated) for (let renderer of this.renderers) renderer.refresh()
     }
 
 }
@@ -198,18 +207,22 @@ class BufferMap extends Map<string, Buffer>
     public destroy() { for (let [_, buffer] of this) buffer.destroy() }
 
     public getBuffer(name: string): Buffer | null { return this.get(name) ?? null }
-    public setBuffer(name: string, flags: GPUBufferUsageFlags, data: BufferData)
+    public setBuffer(name: string, flags: GPUBufferUsageFlags, data: BufferData): boolean
     {
+        let updated = false
+
         let buffer = this.getBuffer(name)
         if (buffer === null || data.length !== buffer.length)
         {
+            updated = buffer !== null // Detect if new buffer was created
             buffer?.destroy()
-            buffer = new Buffer(this.renderer.device, flags | GPUBufferUsage.COPY_DST, data.length)
 
+            buffer = new Buffer(this.renderer.device, flags | GPUBufferUsage.COPY_DST, data.length)
             this.set(name, buffer)
         }
 
         buffer.write(data)
+        return updated
     }
 
 }
@@ -222,13 +235,13 @@ export class Material
     public readonly buffers: string[] = []
     public readonly uniforms: string[][] = []
 
-    public constructor(renderer: RenderEngine, code: string)
+    public constructor(public readonly renderer: RenderEngine, code: string)
     {
         let device = renderer.device
-
         let shader = new Shader(device, code)
-        this.pipeline = new RenderPipeline(device, shader, device.texture.format,
-            this.getVertexLayout(code).map(format => ({ format })))
+
+        let vertices = this.getVertexLayout(code).map(format => ({ format }))
+        this.pipeline = new RenderPipeline(device, shader, device.texture.format, vertices)
 
         this.getUniforms(code)
     }
