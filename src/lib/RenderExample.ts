@@ -1,14 +1,17 @@
 import * as Lumin from "./lumin/Lumin"
-import { Entity, Quaternion, Vector3 } from "./lumin/Lumin"
+import { Color4, Entity, Quaternion, Vector2, Vector3 } from "./lumin/Lumin"
 import { Material, Mesh, MeshRenderer } from "./lumin/render/RenderEngine"
+import { Buffer, BufferFormat, Sampler, Texture } from "./lumin/render/Resource"
 
 import test from "./lumin/render/shaders/Test.wgsl?raw"
+import image from "./eiffel.png"
 
 class TestComponent extends Lumin.Component
 {
 
-    public override init()
+    public override async init()
     {
+        // TODO: Think of how to make this API nicer to use
         let material = new Material(Lumin.renderer, test)
         let mesh = new Mesh(Lumin.renderer,
         [
@@ -17,8 +20,23 @@ class TestComponent extends Lumin.Component
             new Vector3( 1,  1, 0),
             new Vector3(-1,  1, 0)
         ], [0, 1, 2, 0, 2, 3])
+        mesh.setAttribute("uv", Buffer.flatten(BufferFormat.F32,
+        [
+            new Vector2(0, 1),
+            new Vector2(1, 1),
+            new Vector2(1, 0),
+            new Vector2(0, 0)
+        ]))
 
-        this.entity.addComponent(new MeshRenderer(mesh, material))
+        let device = this.scene.renderer.device
+
+        let renderer = new MeshRenderer(mesh, material)
+        renderer.setUniform("s", new Sampler(device))
+
+        let texture = await Texture.fromFile(device, image)
+        renderer.setUniform("texture", texture)
+
+        this.entity.addComponent(renderer)
     }
 
     private q: Quaternion = Quaternion.rotate(0.02, new Vector3(Math.random(), Math.random(), Math.random()).normalize())

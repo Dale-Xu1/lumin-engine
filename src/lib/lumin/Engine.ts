@@ -73,7 +73,6 @@ export class Scene
         if (entity.scene) throw new Error("Entity is already attached to a scene")
         entity.scene = this
 
-        this.entities.push(entity)
         this.newEntities.push(entity) // Defer init call to start of update cycle
     }
 
@@ -92,13 +91,11 @@ export class Scene
     public destroy() { for (let entity of this.entities) entity.destroy() }
     public start()
     {
-        if (this.newEntities.length === 0) return
-
-        for (let entity of this.newEntities) entity.init()
+        for (let entity of this.newEntities) this.entities.push(entity), entity.init()
         this.newEntities = []
 
         for (let entity of this.entities) entity.start() // Initialize new components
-        this.start() // Recurse because of possibility a component added a new entity
+        if (this.newEntities.length > 0) this.start() // Recurse because of possibility a component added a new entity
     }
 
     public update(delta: number)
@@ -165,7 +162,6 @@ export class Entity
         if (component.entity) throw new Error("Component is already attached to an entity")
         component.entity = this
 
-        this.components.push(component)
         this.newComponents.push(component)
     }
 
@@ -185,7 +181,7 @@ export class Entity
     public init() { for (let component of this.components) component.init() }
     public start()
     {
-        for (let component of this.newComponents) component.init()
+        for (let component of this.newComponents) this.components.push(component), component.init()
         this.newComponents = []
     }
 

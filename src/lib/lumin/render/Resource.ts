@@ -89,6 +89,12 @@ export const enum TextureFormat
     DEPTH24 = "depth24plus", DEPTH32 = "depth32float", DEPTH24_STENCIL8 = "depth24plus-stencil8"
 }
 
+export type TextureData =
+    | Int8Array  | Uint8Array | Uint8ClampedArray
+    | Int16Array | Uint16Array
+    | Int32Array | Uint32Array
+    | Float32Array
+
 export interface TextureParams
 {
 
@@ -97,12 +103,40 @@ export interface TextureParams
 
 }
 
-type TextureData =
-    | Int8Array  | Uint8Array
-    | Int16Array | Uint16Array
-    | Int32Array | Uint32Array | Float32Array
 export class Texture implements Resource
 {
+
+    public static async fromFile(device: Device, src: string): Promise<Texture>
+    {
+        let image = await Texture.toImage(src)
+
+        // Create intermediate canvas and draw image onto it
+        let canvas = document.createElement("canvas")
+        let c = canvas.getContext("2d")!
+
+        canvas.width = image.width
+        canvas.height = image.height
+
+        c.drawImage(image, 0, 0)
+        let data = c.getImageData(0, 0, image.width, image.height)
+
+        let texture = new Texture(device, TextureFormat.RGBA_UNORM,
+            GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST, [image.width, image.height])
+        texture.write(data.data)
+
+        return texture
+    }
+
+    private static async toImage(src: string): Promise<HTMLImageElement>
+    {
+        return new Promise((res, _) =>
+        {
+            let image = document.createElement("img")
+
+            image.src = src
+            image.onload = () => res(image)
+        })
+    }
 
     private static getBytes(format: TextureFormat): number
     {
@@ -144,7 +178,7 @@ export class Texture implements Resource
 
     public constructor(device: Device, texture: GPUTexture)
     public constructor(device: Device, format: TextureFormat, usage: GPUTextureUsageFlags,
-        size: [number, number?, number?], params: TextureParams)
+        size: [number, number?, number?], params?: TextureParams)
 
     public constructor({ device }: Device, texture: GPUTexture | TextureFormat, usage?: GPUTextureUsageFlags,
         size?: [number, number?, number?], { samples, mips }: TextureParams = {})
