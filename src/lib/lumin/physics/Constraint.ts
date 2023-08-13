@@ -17,7 +17,8 @@ export default class Constraint extends Component
     public readonly pointA: Vector2
     public readonly pointB: Vector2
 
-    public constructor(public readonly length: number, public readonly a: RigidBody<Shape>, public readonly b: RigidBody<Shape>,
+    public constructor(public length: number,
+        public readonly a: RigidBody<Shape>, public readonly b: RigidBody<Shape>,
     {
         pointA = Vector2.ZERO,
         pointB = Vector2.ZERO
@@ -28,7 +29,7 @@ export default class Constraint extends Component
         this.pointB = pointB
     }
 
-    public override init() { this.scene.physics.constraints.push(this) }
+    public override init() { this.scene.physics.addConstraint(this) }
 
 
     private get localPoints(): [Vector2, Vector2]

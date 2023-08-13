@@ -1,18 +1,15 @@
 import { Matrix2, Vector2 } from "../Math"
 import type RigidBody from "./RigidBody"
 
-export default abstract class Shape
+export default interface Shape
 {
 
-    protected constructor(protected readonly density: number) { }
+    calculate(density: number): [number, number]
 
+    getBounds(body: RigidBody<this>): Bounds
 
-    public abstract calculate(): [number, number]
-
-    public abstract getBounds(body: RigidBody<this>): Bounds
-
-    public update(body: RigidBody<this>) { }
-    public abstract render(c: CanvasRenderingContext2D): void
+    update(body: RigidBody<this>): void
+    render(c: CanvasRenderingContext2D): void
 
 }
 
@@ -24,29 +21,30 @@ export class Bounds
 
 }
 
-export class Circle extends Shape
+export class Circle implements Shape
 {
 
-    public constructor(public readonly radius: number, density: number = 1) { super(density) }
+    public constructor(public readonly radius: number) { }
 
 
-    public override calculate(): [number, number]
+    public calculate(density: number): [number, number]
     {
         let rs = this.radius ** 2
 
-        let mass = Math.PI * rs * this.density
+        let mass = Math.PI * rs * density
         let inertia = mass * rs / 2
 
         return [mass, inertia]
     }
 
-    public override getBounds(body: RigidBody<this>): Bounds
+    public getBounds(body: RigidBody<this>): Bounds
     {
         let r = new Vector2(this.radius, this.radius)
         return new Bounds(body, body.position.sub(r), body.position.add(r))
     }
 
-    public override render(c: CanvasRenderingContext2D)
+    public update(body: RigidBody<this>) { }
+    public render(c: CanvasRenderingContext2D)
     {
         c.strokeStyle = "blue"
         c.strokeWidth = 1
@@ -73,7 +71,7 @@ export class TransformedPolygon
 
 }
 
-export class Polygon extends Shape
+export class Polygon implements Shape
 {
 
     public static pair(array: Vector2[], i: number): [Vector2, Vector2]
@@ -84,10 +82,8 @@ export class Polygon extends Shape
     public readonly normals: Vector2[] = []
     public transform!: TransformedPolygon
 
-    public constructor(public readonly vertices: Vector2[], density: number = 1)
+    public constructor(public readonly vertices: Vector2[])
     {
-        super(density)
-
         // Calculate normals
         this.vertices = vertices
         for (let i = 0; i < vertices.length; i++)
@@ -106,7 +102,7 @@ export class Polygon extends Shape
     }
 
 
-    public override calculate(): [number, number]
+    public calculate(density: number): [number, number]
     {
         let total = 0
         let area = 0, moment = 0
@@ -124,13 +120,13 @@ export class Polygon extends Shape
             moment += cross * (a.dot(a) + b.dot(b) + a.dot(b))
         }
 
-        let mass = area * this.density
+        let mass = area * density
         let inertia = mass * moment / (6 * total)
 
         return [mass, inertia]
     }
 
-    public override getBounds(body: RigidBody<this>): Bounds
+    public getBounds(body: RigidBody<this>): Bounds
     {
         // Compute AABB for polygon
         let minX = Infinity, minY = Infinity
@@ -150,7 +146,7 @@ export class Polygon extends Shape
         return new Bounds(body, body.position.add(min), body.position.add(max))
     }
 
-    public override update(body: RigidBody<this>)
+    public update(body: RigidBody<this>)
     {
         let rotate = Matrix2.rotate(body.angle)
         let vertices = this.vertices.map(vertex => rotate.vmul(vertex))
@@ -159,7 +155,7 @@ export class Polygon extends Shape
         this.transform = new TransformedPolygon(vertices, normals)
     }
 
-    public override render(c: CanvasRenderingContext2D)
+    public render(c: CanvasRenderingContext2D)
     {
         // Render normals
         c.strokeStyle = "blue"
@@ -192,21 +188,21 @@ export class Polygon extends Shape
 export class Rectangle extends Polygon
 {
 
-    public constructor(public readonly width: number, public readonly height: number, density: number = 1)
+    public constructor(public readonly width: number, public readonly height: number)
     {
         let w = width / 2
         let h = height / 2
 
-        super([new Vector2(w, h), new Vector2(-w, h), new Vector2(-w, -h), new Vector2(w, -h)], density)
+        super([new Vector2(w, h), new Vector2(-w, h), new Vector2(-w, -h), new Vector2(w, -h)])
 
         this.width = width
         this.height = height
     }
 
 
-    public override calculate(): [number, number]
+    public override calculate(density: number): [number, number]
     {
-        let mass = this.width * this.height * this.density
+        let mass = this.width * this.height * density
         let inertia = mass * (this.width ** 2 + this.height ** 2) / 12
 
         return [mass, inertia]

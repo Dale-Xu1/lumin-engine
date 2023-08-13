@@ -25,15 +25,15 @@ export function enter(scene: Scene)
 
 export function exit(): Scene | null
 {
-    let scene = stack.pop() ?? null
+    let scene = stack.pop()
     engine.scene = current()
 
-    return scene
+    return scene ?? null
 } 
 
 export { default as Engine } from "./Engine"
 export { Component, Entity, type EntityParams, Input, Key, MouseButton, Scene } from "./Engine"
-export { Matrix2, Matrix4, Quaternion, Vector2, Vector3 } from "./Math"
+export { Color4, Matrix2, Matrix4, Quaternion, Vector2, Vector3 } from "./Math"
 
 export { default as RenderEngine } from "./render/RenderEngine"
 export { Camera } from "./render/RenderEngine"
@@ -42,7 +42,7 @@ export { default as PhysicsEngine } from "./physics/PhysicsEngine"
 export type { PhysicsParams } from "./physics/PhysicsEngine"
 export { default as RigidBody } from "./physics/RigidBody"
 export { type BodyParams, BodyType, } from "./physics/RigidBody"
-export { default as Shape } from "./physics/Shape"
+export type { default as Shape } from "./physics/Shape"
 export { Bounds, Circle, Polygon, Ray, Rectangle } from "./physics/Shape"
 export { RayIntersection } from "./physics/Collision"
 export { default as Constraint } from "./physics/Constraint"

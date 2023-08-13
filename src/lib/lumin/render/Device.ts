@@ -168,7 +168,7 @@ export class RenderPipeline implements Pipeline<GPURenderPipeline, GPURenderPass
         depth, samples, blend = false
     }: RenderPipelineParams = {})
     {
-        let entries = vertices.map(({ format, step = StepMode.VERTEX }, i) =>
+        let entries: GPUVertexBufferLayout[] = vertices.map(({ format, step = StepMode.VERTEX }, i) =>
         ({
             arrayStride: RenderPipeline.getBytes(format),
             stepMode: step,

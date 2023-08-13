@@ -1,11 +1,11 @@
 struct VertexInput
 {
-    @location(0) pos: vec3f
+    @location(0) position: vec3f,
 };
 
 struct FragmentInput
 {
-    @builtin(position) pos: vec4f
+    @builtin(position) position: vec4f
 };
 
 @group(0) @binding(0) var<uniform> view: mat4x4f;
@@ -14,7 +14,7 @@ struct FragmentInput
 fn vs(input: VertexInput) -> FragmentInput
 {
     var output: FragmentInput;
-    output.pos = view * vec4f(input.pos, 1);
+    output.position = view * vec4f(input.position, 1);
 
     return output;
 }

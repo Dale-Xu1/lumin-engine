@@ -23,8 +23,11 @@ export default class RenderExample extends Lumin.Scene
     {
         super(Lumin.renderer, new Lumin.PhysicsEngine())
 
-        this.addEntity(new Entity([new Lumin.Camera()]))
+        this.addEntity(new Entity([new Lumin.Camera(), new Lumin.RigidBody(new Lumin.Circle(0.5))]))
         this.addEntity(new Entity([new TestComponent()]))
+
+        this.addEntity(new Entity([new Lumin.RigidBody(new Lumin.Rectangle(10, 1), { type: Lumin.BodyType.Static })],
+            { position: new Lumin.Vector3(0, -10, 0) }))
     }
 
 }

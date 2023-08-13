@@ -9,10 +9,11 @@ export interface BodyParams
 
     type?: BodyType
 
+    density?: number
+    restitution?: number
+
     friction?: number
     staticFriction?: number
-
-    restitution?: number
 
     gravityScale?: number
 
@@ -33,31 +34,51 @@ export default class RigidBody<T extends Shape> extends Component
 
     public readonly type: BodyType
 
-    public readonly mass: number
-    public readonly inertia: number
+    private _density!: number
+    public get density(): number { return this._density }
+    public set density(density: number)
+    {
+        this._density = density
+        this.calculateMass()
+    }
+
+    public restitution: number
+
+    public mass!: number
+    public inertia!: number
 
     public friction: number
     public staticFriction: number
 
-    public restitution: number
     public gravityScale: number
-
 
     public constructor(public readonly shape: T,
     {
         type = BodyType.Dynamic,
+        density = 1, restitution = 0.2,
         friction = 0.3, staticFriction = 0.5,
-        restitution = 0.2,
         gravityScale = 1
     }: BodyParams = {})
     {
         super()
         this.shape = shape
-
         this.type = type
-        if (type === BodyType.Dynamic)
+
+        this.density = density
+        this.restitution = restitution
+
+        this.friction = friction
+        this.staticFriction = staticFriction
+
+        this.gravityScale = gravityScale
+        this.shape.update(this)
+    }
+
+    private calculateMass()
+    {
+        if (this.type === BodyType.Dynamic)
         {
-            let [mass, inertia] = shape.calculate()
+            let [mass, inertia] = this.shape.calculate(this.density)
 
             this.mass = 1 / mass // Store inverse because multiplication is faster
             this.inertia = 1 / inertia
@@ -67,16 +88,9 @@ export default class RigidBody<T extends Shape> extends Component
             this.mass = 0
             this.inertia = 0
         }
-
-        this.friction = friction
-        this.staticFriction = staticFriction
-
-        this.restitution = restitution
-        this.gravityScale = gravityScale
-
-        this.shape.update(this)
     }
 
+    public is<T extends Shape>(shape: Constructor<T>): this is RigidBody<T> { return this.shape instanceof shape }
     public override init()
     {
         this.previousPosition = this.position = this.entity.position.cast()
@@ -86,8 +100,6 @@ export default class RigidBody<T extends Shape> extends Component
     }
 
     public override destroy() { this.scene.physics.removeBody(this) }
-
-    public is<T extends Shape>(shape: Constructor<T>): this is RigidBody<T> { return this.shape instanceof shape }
 
 
     public applyTorque(torque: number) { this.torque += torque }

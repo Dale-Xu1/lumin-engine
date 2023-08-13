@@ -36,6 +36,8 @@ export class Vector2
     }
 
     public perpendicular(): Vector2 { return new Vector2(this.y, -this.x) }
+
+    public equals(v: Vector2): boolean { return this.x === v.x && this.y === v.y }
     public cast(z: number = 0): Vector3 { return new Vector3(this.x, this.y, z) }
 
 }
@@ -82,7 +84,25 @@ export class Vector3
         return this.div(Math.sqrt(len))
     }
 
+    public equals(v: Vector3): boolean { return this.x === v.x && this.y === v.y && this.z === v.z }
     public cast(): Vector2 { return new Vector2(this.x, this.y) }
+
+}
+
+export class Color4
+{
+
+    public static lerp(a: Color4, b: Color4, t: number): Color4 { return a.mul(1 - t).add(b.mul(t)) }
+
+    public constructor(public readonly r: number, public readonly g: number, public readonly b: number,
+        public readonly a: number) { }
+
+
+    public add(c: Color4): Color4 { return new Color4(this.r + c.r, this.g + c.g, this.b + c.b, this.a + c.a) }
+    public sub(c: Color4): Color4 { return new Color4(this.r - c.r, this.g - c.g, this.b - c.b, this.a - c.a) }
+
+    public mul(v: number): Color4 { return new Color4(this.r * v, this.g * v, this.b * v, this.a * v) }
+    public div(v: number): Color4 { return new Color4(this.r / v, this.g / v, this.b / v, this.a / v) }
 
 }
 
@@ -157,6 +177,7 @@ export class Quaternion
 
     public inverse(): Quaternion { return new Quaternion(-this.x, -this.y, -this.z, this.w).div(this.lengthSq) }
 
+    public equals(q: Quaternion): boolean { return this.x === q.x && this.y === q.y && this.z === q.z && this.w === q.w }
     public get euler(): Vector3
     {
         let sr = 2 * (this.w * this.x + this.y * this.z)

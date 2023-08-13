@@ -1,16 +1,50 @@
+import { Vector2, Color4, Matrix2, Matrix4, Vector3 } from "../Math"
 import type Device from "./Device"
 
 export default interface Resource
 {
 
     getBinding(): GPUBindingResource
-    dispose(): void
+    destroy(): void
 
 }
 
 type BufferData = Int32Array | Uint32Array | Float32Array
+type Data = number | Vector2 | Vector3 | Color4 | Matrix2 | Matrix4
+
+export const enum BufferFormat { I32, U32, F32 }
+
 export class Buffer implements Resource
 {
+
+    public static flatten(format: BufferFormat, data: Data[]): BufferData
+    {
+        let flat = data.map(v =>
+        {
+            if (v instanceof Vector2) return [v.x, v.y]
+            if (v instanceof Vector3) return [v.x, v.y, v.z]
+            if (v instanceof Color4 ) return [v.r, v.g, v.b, v.a]
+            if (v instanceof Matrix2) return [v.m00, v.m10, v.m01, v.m11]
+            if (v instanceof Matrix4) return [
+                v.m00, v.m10, v.m20, v.m30,
+                v.m01, v.m11, v.m21, v.m31,
+                v.m02, v.m12, v.m22, v.m32,
+                v.m03, v.m13, v.m23, v.m33
+            ]
+
+            return v
+        }).flat()
+
+        let Array: Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor
+        switch (format)
+        {
+            case BufferFormat.I32: Array = Int32Array; break
+            case BufferFormat.U32: Array = Uint32Array; break
+            case BufferFormat.F32: Array = Float32Array; break
+        }
+
+        return new Array(flat)
+    }
 
     private readonly device: GPUDevice
     public readonly buffer: GPUBuffer
@@ -44,7 +78,7 @@ export class Buffer implements Resource
     }
 
     public getBinding(): GPUBindingResource { return { buffer: this.buffer } }
-    public dispose() { this.buffer.destroy() }
+    public destroy() { this.buffer.destroy() }
 
 }
 
@@ -156,7 +190,7 @@ export class Texture implements Resource
     }
 
     public getBinding(): GPUBindingResource { return this.view }
-    public dispose() { this.texture.destroy() }
+    public destroy() { this.texture.destroy() }
 
 }
 
@@ -195,6 +229,6 @@ export class Sampler implements Resource
     }
 
     public getBinding(): GPUBindingResource { return this.sampler }
-    public dispose() { }
+    public destroy() { }
 
 }

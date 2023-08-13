@@ -1,6 +1,6 @@
 import { browser } from "$app/environment"
 
-import { Quaternion, Vector2, Vector3 } from "./Math"
+import { Matrix4, Quaternion, Vector2, Vector3 } from "./Math"
 import type PhysicsEngine from "./physics/PhysicsEngine"
 import type RenderEngine from "./render/RenderEngine"
 
@@ -68,6 +68,7 @@ export class Scene
 
     public addEntity(entity: Entity)
     {
+        if (entity.scene) throw new Error("Entity is already attached to a scene")
         this.entities.push(entity)
 
         entity.scene = this
@@ -114,7 +115,7 @@ export interface EntityParams
 
     position?: Vector3
     rotation?: Quaternion
-    scale?   : Vector3
+    scale?: Vector3
 
 }
 
@@ -125,7 +126,9 @@ export class Entity
 
     public position: Vector3
     public rotation: Quaternion
-    public scale:    Vector3
+    public scale: Vector3
+
+    public transform!: Matrix4
 
     public constructor(private readonly components: Component[],
         { position = Vector3.ZERO, rotation = Quaternion.IDENTITY, scale = Vector3.ONE }: EntityParams = {})
@@ -147,6 +150,8 @@ export class Entity
 
     public addComponent(component: Component)
     {
+        if (component.entity) throw new Error("Component is already attached to an entity")
+
         this.components.push(component)
         component.entity = this
     }
@@ -172,13 +177,12 @@ export class Entity
 
     public render()
     {
-        // // Apply transformations
-        // c.save()
-        // c.translate(this.position.x, this.position.y)
-        // c.rotate(this.euler.z)
+        let transform = Matrix4.translate(this.position)
+        if (!this.rotation.equals(Quaternion.IDENTITY)) transform = transform.mul(Matrix4.rotate(this.rotation))
+        if (!this.scale.equals(Vector3.ONE)) transform = transform.mul(Matrix4.scale(this.scale))
 
+        this.transform = transform
         for (let component of this.components) component.render()
-        // c.restore()
     }
 
 }
@@ -187,7 +191,7 @@ export abstract class Component
 {
 
     public entity!: Entity
-    public get scene(): Scene { return this.entity.scene }
+    protected get scene(): Scene { return this.entity.scene }
 
     protected getComponent<T>(type: Constructor<T>): T | null { return this.entity.getComponent(type) }
 

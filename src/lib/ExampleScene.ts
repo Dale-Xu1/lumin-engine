@@ -1,6 +1,6 @@
 import * as Lumin from "./lumin/Lumin"
 import { BodyType, Circle, Constraint, Entity, Input, Key, Matrix2,
-    Quaternion, Ray, Rectangle, RigidBody, Shape, Vector2, Vector3 } from "./lumin/Lumin"
+    Quaternion, Ray, Rectangle, RigidBody, type Shape, Vector2, Vector3 } from "./lumin/Lumin"
 
 class Control extends Lumin.Component
 {
@@ -97,7 +97,7 @@ export default class ExampleScene extends Lumin.Scene
         this.addEntity(new Entity([new RigidBody(new Rectangle(1, 16), { type: BodyType.Static })], { position: new Vector3(-12, 0, 0) }))
         this.addEntity(new Entity([new RigidBody(new Rectangle(1, 16), { type: BodyType.Static })], { position: new Vector3(12, 0, 0) }))
 
-        this.addEntity(new Entity([new RigidBody(new Rectangle(0.5, 0.5, 20), { gravityScale: 0 }), new Control()], { position: new Vector3(0, 5, 0) }))
+        this.addEntity(new Entity([new RigidBody(new Rectangle(0.5, 0.5), { density: 20, gravityScale: 0 }), new Control()], { position: new Vector3(0, 5, 0) }))
 
         let a = new RigidBody(new Rectangle(1, 1))
         let b = new RigidBody(new Rectangle(1, 1))
