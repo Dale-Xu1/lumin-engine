@@ -2,8 +2,89 @@ import { Component } from "../Engine"
 import { Color4, Matrix2, Matrix4, Vector2, Vector3 } from "../Math"
 import Device, { RenderPass, RenderPipeline, Shader, VertexFormat, type RenderPipelineParams } from "./Device"
 import type Resource from "./Resource"
-import { Buffer, BufferFormat } from "./Resource"
+import { Buffer, BufferFormat, Texture } from "./Resource"
 
+export default class RenderEngine // TODO: This renderer is a temporary fix
+{
+
+    public static async init(canvas: HTMLCanvasElement, width: number, height: number)
+    {
+        let renderer = new RenderEngine(null!, canvas)
+
+        renderer.resize(width, height)
+        return renderer
+    }
+
+    public context: CanvasRenderingContext2D
+
+    public get width(): number { return this.canvas.width }
+    public get height(): number { return this.canvas.height }
+
+    private constructor(public readonly device: Device, private readonly canvas: HTMLCanvasElement)
+    {
+        let ratio = window.devicePixelRatio
+
+        this.context = canvas.getContext("2d")!
+        Object.defineProperty(this.context, "strokeWidth",
+        {
+            set: value => this.context.lineWidth = value * ratio * this.camera.size / this.height
+        })
+    }
+
+    public camera!: Camera
+    public attachCamera(camera: Camera)
+    {
+        this.camera = camera
+        camera.resize(this.width / this.height)
+    }
+
+    public resize(width: number, height: number)
+    {
+        let ratio = window.devicePixelRatio
+
+        this.canvas.width = width * ratio
+        this.canvas.height = height * ratio
+
+        if (this.camera) this.camera.resize(width / height)
+    }
+
+
+    public encode(texture: Texture, pass: RenderPass, length: number) { }
+    public render()
+    {
+        let c = this.context
+        c.restore()
+        c.save()
+        c.clearRect(0, 0, this.width, this.height)
+
+        // Center origin
+        c.translate(this.width / 2, this.height / 2)
+
+        // Apply transformations
+        let position = this.camera.entity.position.neg()
+        let scale = this.height / this.camera.size
+
+        c.scale(scale, -scale)
+        c.rotate(-this.camera.entity.rotation.euler.z)
+        c.translate(position.x, position.y)
+    }
+
+    // TODO: Make these functions nicer (also test with perspective projection)
+    public toWorldSpace(screen: Vector2): Vector3
+    {
+        let clip = new Vector2(screen.x / this.width, screen.y / this.height).mul(2).sub(Vector2.ONE)
+        return this.camera.view.inverse().vmul(new Vector2(clip.x, -clip.y).cast())
+    }
+
+    public toScreenSpace(world: Vector3): Vector2
+    {
+        let clip = this.camera.view.wmul(world).cast().add(Vector2.ONE).div(2)
+        return new Vector2(clip.x * this.width, (1 - clip.y) * this.height)
+    }
+
+}
+
+/*
 export default class RenderEngine
 {
 
@@ -39,42 +120,36 @@ export default class RenderEngine
     }
 
 
-    private readonly passes: Map<Material, [RenderPass, number][]> = new Map()
-    public encode(material: Material, pass: RenderPass, length: number)
+    private readonly passes: Map<Texture, [RenderPass, number][]> = new Map()
+    public encode(texture: Texture, pass: RenderPass, length: number)
     {
-        let pipeline = this.passes.get(material)
-        if (!pipeline) this.passes.set(material, pipeline = [])
+        let pipeline = this.passes.get(texture)
+        if (!pipeline) this.passes.set(texture, pipeline = [])
 
         pipeline.push([pass, length])
     }
 
     public render()
     {
-        let texture = this.device.texture
-        for (let [material, passes] of this.passes)
+        // TODO: Depth texture
+        for (let [texture, passes] of this.passes)
         {
-            material.pipeline.start(texture)
+            this.device.beginPass(texture)
             for (let [pass, length] of passes) pass.render(length)
-
-            material.pipeline.end()
+    
+            this.device.endPass()
         }
 
+        // TODO: Post-processing system
         this.device.submit()
         this.passes.clear()
     }
 
-    // TODO: Reimplement coordinate conversions
     // TODO: Compute shaders
     // TODO: Line rendering
 
-    // public toWorldSpace(screen: Vector2): Vector2
-    // public toScreenSpace(world: Vector3): Vector2
-    // {
-    //     let clip = this.camera.view.wmul(world).cast()
-    //     return new Vector2(clip.x, -clip.y)
-    // }
-
 }
+*/
 
 export class Camera extends Component
 {
@@ -101,7 +176,7 @@ export class Camera extends Component
 
     public constructor(size: number = 20, depth: [number, number] = [0, 50])
     {
-        super()
+        super() // TODO: Clear color
 
         this._size = size
         this._depth = depth
@@ -187,7 +262,7 @@ export class MeshRenderer extends Component
         }
     }
 
-    public override render()
+    public override render() // TODO: PRIORITY: Option to change render target (not specifying should use canvas)
     {
         let renderer = this.scene.renderer
 
@@ -196,7 +271,7 @@ export class MeshRenderer extends Component
         this.getUniform<Buffer>("normal")!.write([this.entity.normal])
 
         let length = this.mesh.indices?.length ?? this.mesh.vertices.length
-        renderer.encode(this.material, this.pass, length)
+        renderer.encode(renderer.device.texture, this.pass, length)
     }
 
 }
@@ -271,7 +346,7 @@ export class Material
         let shader = new Shader(device, code)
 
         let vertices = this.getVertexLayout(code).map(format => ({ format }))
-        this.pipeline = new RenderPipeline(device, shader, device.texture.format, vertices, params)
+        this.pipeline = new RenderPipeline(device, shader, device.format, vertices, params)
 
         this.getUniforms(code)
     }

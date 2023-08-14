@@ -13,7 +13,7 @@ onMount(async () =>
     let width = window.innerWidth, height = window.innerHeight
     Lumin.init(await RenderEngine.init(canvas, width, height))
 
-    Lumin.enter(new RenderExample())
+    Lumin.enter(new ExampleScene())
     Lumin.engine.start()
 })
 

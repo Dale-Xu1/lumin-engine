@@ -92,6 +92,13 @@ export class Vector3
 export class Color4
 {
 
+    public static readonly BLACK: Color4 = new Color4(0, 0, 0, 1)
+    public static readonly WHITE: Color4 = new Color4(1, 1, 1, 1)
+
+    public static readonly RED:   Color4 = new Color4(1, 0, 0, 1)
+    public static readonly GREEN: Color4 = new Color4(0, 1, 0, 1)
+    public static readonly BLUE:  Color4 = new Color4(0, 0, 1, 1)
+
     public static lerp(a: Color4, b: Color4, t: number): Color4 { return a.mul(1 - t).add(b.mul(t)) }
 
     public constructor(public readonly r: number, public readonly g: number, public readonly b: number,

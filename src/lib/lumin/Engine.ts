@@ -112,7 +112,7 @@ export class Scene
         this.renderer.render()
 
         // TODO: Move debug lines to new rendering engine
-        // if (DEBUG) this.physics.debug(c)
+        if (DEBUG) this.physics.debug(this.renderer.context)
     }
 
 }
@@ -241,7 +241,7 @@ export namespace Input
     function keyup(e: KeyboardEvent) { codes.delete(e.code) }
 
     function disable(e: MouseEvent) { e.preventDefault() }
-    function mousemove(e: MouseEvent) { mouse = new Vector2(e.clientX, e.clientY) }
+    function mousemove(e: MouseEvent) { mouse = new Vector2(e.clientX, e.clientY).mul(window.devicePixelRatio) }
 
     function mousedown(e: MouseEvent)
     {

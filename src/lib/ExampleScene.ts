@@ -1,6 +1,6 @@
 import * as Lumin from "./lumin/Lumin"
 import { BodyType, Circle, Constraint, Entity, Input, Key, Matrix2,
-    Quaternion, Ray, Rectangle, RigidBody, type Shape, Vector2, Vector3 } from "./lumin/Lumin"
+    Quaternion, Ray, Rectangle, RigidBody, type Shape, Vector2, Vector3, MouseButton } from "./lumin/Lumin"
 
 class Control extends Lumin.Component
 {
@@ -25,30 +25,6 @@ class Control extends Lumin.Component
         this.body.applyTorque(angle * 5)
     }
 
-    // public override render(c: CanvasRenderingContext2D)
-    // {
-    //     let t = c.getTransform()
-    //     c.restore()
-
-    //     let intersection = this.scene.physics.testRay(new Ray(this.entity.position.cast(), Matrix2.rotate(this.entity.euler.z).mul(Vector2.DOWN)))
-    //     if (intersection !== null)
-    //     {
-    //         c.strokeStyle = "red"
-    //         c.strokeWidth = 1
-
-    //         let u = this.entity.position
-    //         let v = intersection.position
-
-    //         c.beginPath()
-    //         c.moveTo(u.x, u.y)
-    //         c.lineTo(v.x, v.y)
-    //         c.stroke()
-    //     }
-
-    //     c.save()
-    //     c.setTransform(t)
-    // }
-
 }
 
 class AddBody extends Lumin.Component
@@ -57,17 +33,21 @@ class AddBody extends Lumin.Component
     private down: boolean = false
     public override fixedUpdate()
     {
-        // let previous = this.down
-        // this.down = Input.button[MouseButton.LEFT]
+        let previous = this.down
+        this.down = Input.button[MouseButton.LEFT]
 
-        // if (this.down && !previous)
-        // {
-        //     let position = this.scene.renderer.toWorldSpace(Input.mouse)
-        //     if (this.scene.physics.testPoint(position).length > 0) return
+        if (this.down && !previous)
+        {
+            let position = this.scene.renderer.toWorldSpace(Input.mouse).cast()
+            if (this.scene.physics.testPoint(position).length > 0) return
 
-        //     let shape = Math.random() < 0.5 ? new Circle(Math.random() * 0.4 + 0.2) : new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
-        //     this.scene.addEntity(new Entity(position.cast(), Math.random() * 2 * Math.PI, [new RigidBody(shape)]))
-        // }
+            let shape = Math.random() < 0.5 ? new Circle(Math.random() * 0.4 + 0.2) : new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
+            this.scene.addEntity(new Entity([new RigidBody(shape)],
+            {
+                position: position.cast(),
+                rotation: Quaternion.rotate(Math.random() * 2 * Math.PI)
+            }))
+        }
     }
 
 }
