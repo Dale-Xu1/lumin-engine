@@ -18,7 +18,22 @@ const ELEMENT_SIZE = 4
 export class Buffer implements Resource
 {
 
-    public static flatten(format: BufferFormat, data: Data[]): BufferData
+    private readonly device: GPUDevice
+    public readonly buffer: GPUBuffer
+
+    public readonly length: number
+
+    public constructor({ device }: Device, public readonly format: BufferFormat, usage: GPUBufferUsageFlags,
+        length: number)
+    {
+        this.device = device
+
+        this.length = length
+        this.buffer = device.createBuffer({ size: ELEMENT_SIZE * length, usage })
+    }
+
+
+    public write(data: Data[], offset: number = 0)
     {
         let flat = data.map(v =>
         {
@@ -37,33 +52,19 @@ export class Buffer implements Resource
         }).flat()
 
         let Array: Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor
-        switch (format)
+        switch (this.format)
         {
             case BufferFormat.I32: Array = Int32Array; break
             case BufferFormat.U32: Array = Uint32Array; break
             case BufferFormat.F32: Array = Float32Array; break
         }
 
-        return new Array(flat)
+        this.writeData(new Array(flat), offset)
     }
 
-    private readonly device: GPUDevice
-    public readonly buffer: GPUBuffer
-
-    public readonly length: number
-
-    public constructor({ device }: Device, usage: GPUBufferUsageFlags, length: number)
+    public writeData(data: BufferData, offset: number = 0)
     {
-        this.device = device
-
-        this.length = length
-        this.buffer = device.createBuffer({ size: ELEMENT_SIZE * length, usage })
-    }
-
-
-    public write(data: BufferData, offset: number = 0)
-    {
-        this.device.queue.writeBuffer(this.buffer, offset, data)
+        this.device.queue.writeBuffer(this.buffer, ELEMENT_SIZE * offset, data)
     }
 
     public getBinding(): GPUBindingResource { return { buffer: this.buffer } }
@@ -106,7 +107,7 @@ export interface TextureParams
 export class Texture implements Resource
 {
 
-    public static async fromFile(device: Device, src: string): Promise<Texture>
+    public static async fromFile(device: Device, src: string, params: TextureParams = {}): Promise<Texture>
     {
         let image = await Texture.toImage(src)
 
@@ -121,9 +122,9 @@ export class Texture implements Resource
         let data = c.getImageData(0, 0, image.width, image.height)
 
         let texture = new Texture(device, TextureFormat.RGBA_UNORM,
-            GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST, [image.width, image.height])
-        texture.write(data.data)
+            GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST, [image.width, image.height], params)
 
+        texture.write(data.data)
         return texture
     }
 

@@ -1,8 +1,8 @@
 import { Component } from "../Engine"
-import { Matrix4, Vector2, Vector3 } from "../Math"
+import { Color4, Matrix2, Matrix4, Vector2, Vector3 } from "../Math"
 import Device, { RenderPass, RenderPipeline, Shader, VertexFormat, type RenderPipelineParams } from "./Device"
 import type Resource from "./Resource"
-import { Buffer, BufferFormat, type BufferData } from "./Resource"
+import { Buffer, BufferFormat } from "./Resource"
 
 export default class RenderEngine
 {
@@ -156,9 +156,9 @@ export class MeshRenderer extends Component
         let device = this.scene.renderer.device
 
         // Initialize system uniforms
-        this.setUniform("view",      new Buffer(device, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, 16))
-        this.setUniform("transform", new Buffer(device, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, 16))
-        this.setUniform("normal",    new Buffer(device, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, 16))
+        this.setUniform("view",      new Buffer(device, BufferFormat.F32, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, 16))
+        this.setUniform("transform", new Buffer(device, BufferFormat.F32, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, 16))
+        this.setUniform("normal",    new Buffer(device, BufferFormat.F32, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, 16))
 
         this.refresh()
     }
@@ -191,9 +191,9 @@ export class MeshRenderer extends Component
     {
         let renderer = this.scene.renderer
 
-        this.getUniform<Buffer>("view")!.write(Buffer.flatten(BufferFormat.F32, [renderer.camera.view]))
-        this.getUniform<Buffer>("transform")!.write(Buffer.flatten(BufferFormat.F32, [this.entity.transform]))
-        this.getUniform<Buffer>("normal")!.write(Buffer.flatten(BufferFormat.F32, [this.entity.normal]))
+        this.getUniform<Buffer>("view")!.write([renderer.camera.view])
+        this.getUniform<Buffer>("transform")!.write([this.entity.transform])
+        this.getUniform<Buffer>("normal")!.write([this.entity.normal])
 
         let length = this.mesh.indices?.length ?? this.mesh.vertices.length
         renderer.encode(this.material, this.pass, length)
@@ -204,6 +204,7 @@ export class MeshRenderer extends Component
 const VERTEX_ID: string = "position"
 const INDEX_ID: string = ":index" // Identifier not usable by WGSL
 
+type Data = number | Vector2 | Vector3 | Color4 | Matrix2 | Matrix4
 export class Mesh
 {
 
@@ -216,41 +217,42 @@ export class Mesh
     public set vertex(vertices: Vector3[])
     {
         this.vertices = vertices
-        this.setAttribute(VERTEX_ID, Buffer.flatten(BufferFormat.F32, vertices))
+        this.write(VERTEX_ID, vertices)
     }
 
     public get index(): Buffer | null { return this.getAttribute(INDEX_ID) }
     public set index(indices: number[])
     {
         this.indices = indices
-        this.setBuffer(INDEX_ID, new Uint32Array(indices), GPUBufferUsage.INDEX)
+        this.write(INDEX_ID, indices)
     }
 
 
-    public constructor(private readonly renderer: RenderEngine, vertices: Vector3[], indices?: number[])
+    public constructor(renderer: RenderEngine, vertices: Vector3[], indices?: number[])
     {
+        this.setAttribute(VERTEX_ID, new Buffer(renderer.device, BufferFormat.F32, GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST, 3 * vertices.length))
         this.vertex = vertices
-        if (indices) this.index = indices
+
+        if (indices)
+        {
+            this.setAttribute(INDEX_ID, new Buffer(renderer.device, BufferFormat.U32, GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST, indices.length))
+            this.index = indices
+        }
     }
 
     public destroy() { for (let [_, buffer] of this.attributes) buffer.destroy() }
 
     public getAttribute(name: string): Buffer | null { return this.attributes.get(name) ?? null }
-    public setAttribute(name: string, data: BufferData, flags: GPUBufferUsageFlags = 0)
+    public setAttribute(name: string, buffer: Buffer)
     {
-        this.setBuffer(name, data, flags | GPUBufferUsage.VERTEX)
+        this.getAttribute(name)?.destroy()
+        this.attributes.set(name, buffer)
     }
 
-    private setBuffer(name: string, data: BufferData, flags: GPUBufferUsageFlags)
+    public write(name: string, data: Data[])
     {
         let buffer = this.getAttribute(name)
-        if (buffer === null)
-        {
-            buffer = new Buffer(this.renderer.device, flags | GPUBufferUsage.COPY_DST, data.length)
-            this.attributes.set(name, buffer)
-        }
-
-        buffer.write(data)
+        buffer?.write(data)
     }
 
 }

@@ -14,7 +14,7 @@ struct FragmentInput
 @group(0) @binding(1) var<uniform> transform: mat4x4f;
 
 @group(1) @binding(0) var texture: texture_2d<f32>;
-@group(1) @binding(1) var s: sampler;
+@group(1) @binding(1) var textureSampler: sampler;
 
 @vertex
 fn vs(input: VertexInput) -> FragmentInput
@@ -29,5 +29,5 @@ fn vs(input: VertexInput) -> FragmentInput
 @fragment
 fn fs(input: FragmentInput) -> @location(0) vec4f
 {
-    return textureSample(texture, s, input.uv);
+    return textureSample(texture, textureSampler, input.uv);
 }

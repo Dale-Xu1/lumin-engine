@@ -11,7 +11,6 @@ class TestComponent extends Lumin.Component
 
     public override async init()
     {
-        // TODO: Think of how to make this API nicer to use
         let material = new Material(Lumin.renderer, test)
         let mesh = new Mesh(Lumin.renderer,
         [
@@ -20,18 +19,19 @@ class TestComponent extends Lumin.Component
             new Vector3( 1,  1, 0),
             new Vector3(-1,  1, 0)
         ], [0, 1, 2, 0, 2, 3])
-        mesh.setAttribute("uv", Buffer.flatten(BufferFormat.F32,
+
+        let device = this.scene.renderer.device
+        mesh.setAttribute("uv", new Buffer(device, BufferFormat.F32, GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST, 8))
+        mesh.write("uv",
         [
             new Vector2(0, 1),
             new Vector2(1, 1),
             new Vector2(1, 0),
             new Vector2(0, 0)
-        ]))
-
-        let device = this.scene.renderer.device
+        ])
 
         let renderer = new MeshRenderer(mesh, material)
-        renderer.setUniform("s", new Sampler(device))
+        renderer.setUniform("textureSampler", new Sampler(device))
 
         let texture = await Texture.fromFile(device, image)
         renderer.setUniform("texture", texture)
