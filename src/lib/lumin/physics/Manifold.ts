@@ -37,8 +37,8 @@ export default class Manifold
         let [r1, r2] = this.calculateContact(start)
 
         let normal = this.normal
-        let rn = r1.cross(normal) ** 2 * this.a.inertia + r2.cross(normal) ** 2 * this.b.inertia
-        let share = 1 / ((this.a.mass + this.b.mass + rn) * this.contacts.length)
+        let rn = r1.cross(normal) ** 2 * this.a.invInertia + r2.cross(normal) ** 2 * this.b.invInertia
+        let share = 1 / ((this.a.invMass + this.b.invMass + rn) * this.contacts.length)
 
         // Calculate normal velocity
         let rv = this.relativeVelocity(r1, r2)
@@ -61,7 +61,7 @@ export default class Manifold
         let jt = -rv.dot(tangent) * share
 
         // Coulomb's Law
-        let friction = (this.a.friction + this.b.friction) / 2
+        let friction = (this.a.kineticFriction + this.b.kineticFriction) / 2
         let staticFriction = (this.a.staticFriction + this.b.staticFriction) / 2
 
         let tangentImpulse: Vector2
@@ -75,10 +75,10 @@ export default class Manifold
     private calculateContact(start: Vector2): [Vector2, Vector2]
     {
         let end = start.add(this.normal.mul(this.penetration))
-        let total = this.a.mass + this.b.mass
+        let total = this.a.invMass + this.b.invMass
 
         // Calculate contact point based on masses
-        let r2 = start.mul(this.b.mass / total).add(end.mul(this.a.mass / total))
+        let r2 = start.mul(this.b.invMass / total).add(end.mul(this.a.invMass / total))
         let r1 = r2.add(this.b.position.sub(this.a.position))
 
         return [r1, r2]
@@ -86,8 +86,8 @@ export default class Manifold
 
     private relativeVelocity(r1: Vector2, r2: Vector2): Vector2
     {
-        let v1 = this.a.velocity.add(new Vector2(-r1.y * this.a.rotation, r1.x * this.a.rotation))
-        let v2 = this.b.velocity.add(new Vector2(-r2.y * this.b.rotation, r2.x * this.b.rotation))
+        let v1 = this.a.velocity.add(new Vector2(-r1.y * this.a.angularAcceleration, r1.x * this.a.angularAcceleration))
+        let v2 = this.b.velocity.add(new Vector2(-r2.y * this.b.angularAcceleration, r2.x * this.b.angularAcceleration))
         return v2.sub(v1)
     }
 
@@ -99,11 +99,11 @@ export default class Manifold
         if (penetration < SLOP) return
 
         // Distribute correction based on masses
-        let total = this.a.mass + this.b.mass
+        let total = this.a.invMass + this.b.invMass
         let correction = Math.max(penetration - SLOP, 0) / total * rate
 
-        this.a.position = this.a.position.sub(this.normal.mul(correction * this.a.mass))
-        this.b.position = this.b.position.add(this.normal.mul(correction * this.b.mass))
+        this.a.position = this.a.position.sub(this.normal.mul(correction * this.a.invMass))
+        this.b.position = this.b.position.add(this.normal.mul(correction * this.b.invMass))
     }
 
 

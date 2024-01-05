@@ -12,7 +12,7 @@ export interface BodyParams
     density?: number
     restitution?: number
 
-    friction?: number
+    kineticFriction?: number
     staticFriction?: number
 
     gravityScale?: number
@@ -29,7 +29,7 @@ export default class RigidBody<T extends Shape> extends Component
     private force: Vector2 = Vector2.ZERO
 
     public angle!: number
-    public rotation: number = 0
+    public angularAcceleration: number = 0
     private torque: number = 0
 
     public readonly type: BodyType
@@ -45,9 +45,11 @@ export default class RigidBody<T extends Shape> extends Component
     public restitution: number
 
     public mass!: number
+    public invMass!: number
     public inertia!: number
+    public invInertia!: number
 
-    public friction: number
+    public kineticFriction: number
     public staticFriction: number
 
     public gravityScale: number
@@ -56,7 +58,7 @@ export default class RigidBody<T extends Shape> extends Component
     {
         type = BodyType.Dynamic,
         density = 1, restitution = 0.2,
-        friction = 0.3, staticFriction = 0.5,
+        kineticFriction = 0.3, staticFriction = 0.5,
         gravityScale = 1
     }: BodyParams = {})
     {
@@ -67,7 +69,7 @@ export default class RigidBody<T extends Shape> extends Component
         this.density = density
         this.restitution = restitution
 
-        this.friction = friction
+        this.kineticFriction = kineticFriction
         this.staticFriction = staticFriction
 
         this.gravityScale = gravityScale
@@ -78,15 +80,15 @@ export default class RigidBody<T extends Shape> extends Component
     {
         if (this.type === BodyType.Dynamic)
         {
-            let [mass, inertia] = this.shape.calculate(this.density)
+            [this.mass, this.inertia] = this.shape.calculate(this.density)
 
-            this.mass = 1 / mass // Store inverse because multiplication is faster
-            this.inertia = 1 / inertia
+            this.invMass = 1 / this.mass // Store inverse because multiplication is faster
+            this.invInertia = 1 / this.inertia
         }
         else // Static bodies are given infinite mass
         {
-            this.mass = 0
-            this.inertia = 0
+            this.invMass = 0
+            this.invInertia = 0
         }
     }
 
@@ -111,8 +113,8 @@ export default class RigidBody<T extends Shape> extends Component
 
     public applyImpulse(impulse: Vector2, contact: Vector2)
     {
-        this.velocity = this.velocity.add(impulse.mul(this.mass))
-        this.rotation += contact.cross(impulse) * this.inertia
+        this.velocity = this.velocity.add(impulse.mul(this.invMass))
+        this.angularAcceleration += contact.cross(impulse) * this.invInertia
     }
 
     private previousPosition!: Vector2 // Previous data is kept for interpolation
@@ -126,7 +128,7 @@ export default class RigidBody<T extends Shape> extends Component
         if (this.type === BodyType.Dynamic) this.dynamicUpdate(delta, gravity)
         else this.staticUpdate()
 
-        // Clear forces
+        // Clear forces and torque
         this.force = Vector2.ZERO
         this.torque = 0
 
@@ -135,16 +137,15 @@ export default class RigidBody<T extends Shape> extends Component
 
     private dynamicUpdate(delta: number, gravity: Vector2)
     {
-        // Calculate acceleration
-        let acceleration = this.force.mul(this.mass).add(gravity.mul(this.gravityScale))
-
         // Integrate position
+        let acceleration = this.force.mul(this.invMass).add(gravity.mul(this.gravityScale))
         this.velocity = this.velocity.add(acceleration.mul(delta))
         this.position = this.position.add(this.velocity.mul(delta))
 
         // Integrate angle
-        this.rotation += this.torque * this.inertia * delta
-        this.angle += this.rotation * delta
+        let angularAcceleration = this.torque * this.invInertia
+        this.angularAcceleration += angularAcceleration * delta
+        this.angle += this.angularAcceleration * delta
     }
 
     private staticUpdate()
