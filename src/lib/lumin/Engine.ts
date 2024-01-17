@@ -5,8 +5,6 @@ import type PhysicsEngine from "./physics/PhysicsEngine"
 
 const MAX_DELAY = 200
 
-// TODO: Entity parenting
-
 export default class Engine
 {
 
@@ -173,7 +171,7 @@ export class Scene
         for (let entity of this.newEntities.concat(this.entities))
         {
             let camera = entity.getComponent(Camera)
-            if (camera !== null) return camera
+            if (camera) return camera
         }
 
         throw new Error("Scene does not have a camera")

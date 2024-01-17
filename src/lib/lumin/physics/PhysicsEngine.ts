@@ -88,7 +88,8 @@ export default class PhysicsEngine
             if (Collision.rayBounds(bounds, ray))
             {
                 let intersection = Collision.testRay(body, ray)
-                if (intersection !== null && (min === null || intersection.distance < min.distance)) min = intersection
+                if (intersection !== null &&
+                    (min === null || intersection.distance < min.distance)) min = intersection
             }
         }
 

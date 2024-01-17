@@ -46,6 +46,7 @@ export default class RigidBody<T extends Shape> extends Component
 
     public mass!: number
     public invMass!: number
+
     public inertia!: number
     public invInertia!: number
 
@@ -92,11 +93,12 @@ export default class RigidBody<T extends Shape> extends Component
         }
     }
 
+
     public is<T extends Shape>(shape: Constructor<T>): this is RigidBody<T> { return this.shape instanceof shape }
     public override init()
     {
-        this.previousPosition = this.position = this.entity.position
-        this.previousAngle = this.angle = this.entity.rotation
+        this.position = this.previousPosition = this.entity.position
+        this.angle = this.previousAngle = this.entity.rotation
 
         this.scene.physics.addBody(this)
     }
