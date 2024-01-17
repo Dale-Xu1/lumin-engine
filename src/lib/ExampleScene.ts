@@ -57,7 +57,7 @@ export default class ExampleScene extends Lumin.Scene
     {
         super(new Lumin.PhysicsEngine({ debug: true }))
 
-        // this.addEntity(new Entity([new Lumin.Camera()]))
+        this.addEntity(new Entity([new Lumin.Camera()]))
         this.addEntity(new Entity([new AddBody()]))
 
         for (let i = 0; i < 50; i++)
@@ -75,7 +75,7 @@ export default class ExampleScene extends Lumin.Scene
         this.addEntity(new Entity([new RigidBody(new Rectangle(1, 16), { type: BodyType.Static })], { position: new Vector2(-12, 0) }))
         this.addEntity(new Entity([new RigidBody(new Rectangle(1, 16), { type: BodyType.Static })], { position: new Vector2(12, 0) }))
 
-        this.addEntity(new Entity([new RigidBody(new Rectangle(0.5, 0.5), { density: 20, gravityScale: 0 }), new Control(), new Lumin.Camera()], { position: new Vector2(0, 5) }))
+        this.addEntity(new Entity([new RigidBody(new Rectangle(0.5, 0.5), { density: 20, gravityScale: 0 }), new Control()], { position: new Vector2(0, 5) }))
 
         let a = new RigidBody(new Rectangle(1, 1))
         let b = new RigidBody(new Rectangle(1, 1))
