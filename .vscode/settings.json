@@ -10,5 +10,6 @@
         "wgsl",
         "wmul",
         "workgroups"
-    ]
+    ],
+    "codeQL.githubDatabase.download": "never"
 }
