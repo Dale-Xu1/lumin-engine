@@ -1,6 +1,6 @@
 import * as Lumin from "./lumin/Lumin"
-import { BodyType, Circle, Constraint, Entity, Input, Key, Matrix2,
-    Quaternion, Ray, Rectangle, RigidBody, type Shape, Vector2, Vector3, MouseButton } from "./lumin/Lumin"
+import { BodyType, Circle, Constraint, Entity, Input, Key, Rectangle, RigidBody, type Shape,
+    Vector2, MouseButton } from "./lumin/Lumin"
 
 class Control extends Lumin.Component
 {
@@ -38,15 +38,13 @@ class AddBody extends Lumin.Component
 
         if (this.down && !previous)
         {
-            let position = this.scene.renderer.toWorldSpace(Input.mouse).cast()
+            let position = Lumin.renderer.toWorldSpace(Input.mouse)
+            position = Lumin.renderer.toWorldSpace(Lumin.renderer.toScreenSpace(position))
+
             if (this.scene.physics.testPoint(position).length > 0) return
 
             let shape = Math.random() < 0.5 ? new Circle(Math.random() * 0.4 + 0.2) : new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
-            this.scene.addEntity(new Entity([new RigidBody(shape)],
-            {
-                position: position.cast(),
-                rotation: Quaternion.rotate(Math.random() * 2 * Math.PI)
-            }))
+            this.scene.addEntity(new Entity([new RigidBody(shape)], { position, rotation: Math.random() * 2 * Math.PI }))
         }
     }
 
@@ -57,9 +55,9 @@ export default class ExampleScene extends Lumin.Scene
 
     public constructor()
     {
-        super(Lumin.renderer, new Lumin.PhysicsEngine())
+        super(new Lumin.PhysicsEngine({ debug: true }))
 
-        this.addEntity(new Entity([new Lumin.Camera()]))
+        // this.addEntity(new Entity([new Lumin.Camera()]))
         this.addEntity(new Entity([new AddBody()]))
 
         for (let i = 0; i < 50; i++)
@@ -67,26 +65,26 @@ export default class ExampleScene extends Lumin.Scene
             let shape = Math.random() < 0.5 ? new Circle(Math.random() * 0.4 + 0.2) : new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
             this.addEntity(new Entity([new RigidBody(shape)],
             {
-                position: new Vector3(Math.random() * 2 - 1, 0, 0),
-                rotation: Quaternion.rotate(Math.random() * 2 * Math.PI)
+                position: new Vector2(Math.random() * 2 - 1, 0),
+                rotation: Math.random() * 2 * Math.PI
             }))
         }
 
-        this.addEntity(new Entity([new RigidBody(new Rectangle(24, 1), { type: BodyType.Static })], { position: new Vector3(0, 8, 0) }))
-        this.addEntity(new Entity([new RigidBody(new Rectangle(24, 1), { type: BodyType.Static })], { position: new Vector3(0, -8, 0) }))
-        this.addEntity(new Entity([new RigidBody(new Rectangle(1, 16), { type: BodyType.Static })], { position: new Vector3(-12, 0, 0) }))
-        this.addEntity(new Entity([new RigidBody(new Rectangle(1, 16), { type: BodyType.Static })], { position: new Vector3(12, 0, 0) }))
+        this.addEntity(new Entity([new RigidBody(new Rectangle(24, 1), { type: BodyType.Static })], { position: new Vector2(0, 8) }))
+        this.addEntity(new Entity([new RigidBody(new Rectangle(24, 1), { type: BodyType.Static })], { position: new Vector2(0, -8) }))
+        this.addEntity(new Entity([new RigidBody(new Rectangle(1, 16), { type: BodyType.Static })], { position: new Vector2(-12, 0) }))
+        this.addEntity(new Entity([new RigidBody(new Rectangle(1, 16), { type: BodyType.Static })], { position: new Vector2(12, 0) }))
 
-        this.addEntity(new Entity([new RigidBody(new Rectangle(0.5, 0.5), { density: 20, gravityScale: 0 }), new Control()], { position: new Vector3(0, 5, 0) }))
+        this.addEntity(new Entity([new RigidBody(new Rectangle(0.5, 0.5), { density: 20, gravityScale: 0 }), new Control(), new Lumin.Camera()], { position: new Vector2(0, 5) }))
 
         let a = new RigidBody(new Rectangle(1, 1))
         let b = new RigidBody(new Rectangle(1, 1))
         let c = new RigidBody(new Rectangle(1, 1))
         let d = new RigidBody(new Rectangle(1, 1))
-        this.addEntity(new Entity([a, new Constraint(2, a, b), new Constraint(Math.sqrt(8), a, c)], { position: new Vector3(-5, 2, 0) }))
-        this.addEntity(new Entity([b, new Constraint(2, b, c), new Constraint(Math.sqrt(8), b, d)], { position: new Vector3(-5, 4, 0) }))
-        this.addEntity(new Entity([c, new Constraint(2, c, d)], { position: new Vector3(-3, 4, 0) }))
-        this.addEntity(new Entity([d, new Constraint(2, d, a)], { position: new Vector3(-3, 2, 0) }))
+        this.addEntity(new Entity([a, new Constraint(2, a, b), new Constraint(Math.sqrt(8), a, c)], { position: new Vector2(-5, 2) }))
+        this.addEntity(new Entity([b, new Constraint(2, b, c), new Constraint(Math.sqrt(8), b, d)], { position: new Vector2(-5, 4) }))
+        this.addEntity(new Entity([c, new Constraint(2, c, d)], { position: new Vector2(-3, 4) }))
+        this.addEntity(new Entity([d, new Constraint(2, d, a)], { position: new Vector2(-3, 2) }))
 
         let start = new RigidBody(new Rectangle(0.5, 0.5), { type: BodyType.Static })
         let chain: RigidBody<Shape>[] = []
@@ -97,15 +95,15 @@ export default class ExampleScene extends Lumin.Scene
         }
 
         let y = 4
-        this.addEntity(new Entity([start, new Constraint(0.5, start, chain[0], { pointA: Vector2.ZERO, pointB: Vector2.UP.mul(0.15) })], { position: new Vector3(4, y, 0) }))
+        this.addEntity(new Entity([start, new Constraint(0.5, start, chain[0], { pointA: Vector2.ZERO, pointB: Vector2.UP.mul(0.15) })], { position: new Vector2(4, y) }))
         for (let i = 0; i < chain.length - 1; i++)
         {
             let a = chain[i], b = chain[i + 1]
             y -= 0.6
 
-            this.addEntity(new Entity([a, new Constraint(0.25, a, b, { pointA: Vector2.DOWN.mul(0.15), pointB: Vector2.UP.mul(0.15) })], { position: new Vector3(4, y, 0) }))
+            this.addEntity(new Entity([a, new Constraint(0.25, a, b, { pointA: Vector2.DOWN.mul(0.15), pointB: Vector2.UP.mul(0.15) })], { position: new Vector2(4, y) }))
         }
-        this.addEntity(new Entity([chain[chain.length - 1]], { position: new Vector3(4, y - 0.6, 0) }))
+        this.addEntity(new Entity([chain[chain.length - 1]], { position: new Vector2(4, y - 0.6) }))
     }
 
 }

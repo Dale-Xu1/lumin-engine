@@ -9,6 +9,7 @@ import type Shape from "./Shape"
 export interface PhysicsParams
 {
 
+    debug?: boolean
     gravity?: Vector2
 
     iterations?: number
@@ -21,6 +22,8 @@ export interface PhysicsParams
 export default class PhysicsEngine
 {
 
+    public debug: boolean
+
     private readonly bodies: RigidBody<Shape>[] = []
     private readonly constraints: Constraint[] = []
 
@@ -29,20 +32,22 @@ export default class PhysicsEngine
     private readonly iterations: number
     private readonly positionIterations: number
 
-    private readonly rate: number
+    private readonly correctionRate: number
 
     public constructor(
     {
+        debug = false,
         gravity = Vector2.DOWN.mul(9.81),
         iterations = 16, positionIterations = 12,
         correctionRate = 0.7
     }: PhysicsParams = {})
     {
+        this.debug = debug
         this.gravity = gravity
 
         this.iterations = iterations
         this.positionIterations = positionIterations
-        this.rate = correctionRate
+        this.correctionRate = correctionRate
     }
 
     public addBody(body: RigidBody<Shape>) { this.bodies.push(body) }
@@ -91,7 +96,7 @@ export default class PhysicsEngine
     }
 
 
-    private collisions!: Manifold[]
+    private collisions: Manifold[] = []
     public update(delta: number)
     {
         for (let body of this.bodies) body.integrate(delta, this.gravity)
@@ -107,16 +112,15 @@ export default class PhysicsEngine
 
         for (let i = 0; i < this.positionIterations; i++)
         {
-            for (let constraint of this.constraints) constraint.correctPositions(this.rate)
-            for (let collision of this.collisions) collision.correctPositions(this.rate)
+            for (let constraint of this.constraints) constraint.correctPositions(this.correctionRate)
+            for (let collision of this.collisions) collision.correctPositions(this.correctionRate)
         }
     }
 
-    public debug(c: CanvasRenderingContext2D)
+    public render(c: CanvasRenderingContext2D)
     {
-        for (let collision of this.collisions) collision.debug(c)
-        for (let constraint of this.constraints) constraint.debug(c)
-        for (let body of this.bodies) body.debug(c)
+        if (!this.debug) return
+        for (let collision of this.collisions) collision.render(c)
     }
 
 }

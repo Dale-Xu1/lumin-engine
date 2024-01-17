@@ -29,7 +29,7 @@ export default class RigidBody<T extends Shape> extends Component
     private force: Vector2 = Vector2.ZERO
 
     public angle!: number
-    public angularAcceleration: number = 0
+    public angularVelocity: number = 0
     private torque: number = 0
 
     public readonly type: BodyType
@@ -95,8 +95,8 @@ export default class RigidBody<T extends Shape> extends Component
     public is<T extends Shape>(shape: Constructor<T>): this is RigidBody<T> { return this.shape instanceof shape }
     public override init()
     {
-        this.previousPosition = this.position = this.entity.position.cast()
-        this.previousAngle = this.angle = this.entity.rotation.euler.z
+        this.previousPosition = this.position = this.entity.position
+        this.previousAngle = this.angle = this.entity.rotation
 
         this.scene.physics.addBody(this)
     }
@@ -114,7 +114,7 @@ export default class RigidBody<T extends Shape> extends Component
     public applyImpulse(impulse: Vector2, contact: Vector2)
     {
         this.velocity = this.velocity.add(impulse.mul(this.invMass))
-        this.angularAcceleration += contact.cross(impulse) * this.invInertia
+        this.angularVelocity += contact.cross(impulse) * this.invInertia
     }
 
     private previousPosition!: Vector2 // Previous data is kept for interpolation
@@ -144,14 +144,14 @@ export default class RigidBody<T extends Shape> extends Component
 
         // Integrate angle
         let angularAcceleration = this.torque * this.invInertia
-        this.angularAcceleration += angularAcceleration * delta
-        this.angle += this.angularAcceleration * delta
+        this.angularVelocity += angularAcceleration * delta
+        this.angle += this.angularVelocity * delta
     }
 
     private staticUpdate()
     {
-        this.position = this.entity.position.cast()
-        this.angle = this.entity.rotation.euler.z
+        this.position = this.entity.position
+        this.angle = this.entity.rotation
     }
 
     public getBounds(): Bounds { return this.shape.getBounds(this) }
@@ -162,21 +162,10 @@ export default class RigidBody<T extends Shape> extends Component
         if (this.type === BodyType.Static) return
         
         // Interpolate position
-        let position = Vector2.lerp(this.previousPosition, this.position, alpha)
- 
-        this.entity.position = position.cast(this.entity.position.z)
-        this.entity.rotation = Quaternion.rotate(this.lerp(this.previousAngle, this.angle, alpha))
+        this.entity.position = Vector2.lerp(this.previousPosition, this.position, alpha)
+        this.entity.rotation = this.lerp(this.previousAngle, this.angle, alpha)
     }
 
-    public debug(c: CanvasRenderingContext2D)
-    {
-        // Apply transformations
-        c.save()
-        c.translate(this.entity.position.x, this.entity.position.y)
-        c.rotate(this.entity.rotation.euler.z)
-
-        this.shape.render(c)
-        c.restore()
-    }
+    public render(c: CanvasRenderingContext2D) { if (this.scene.physics.debug) this.shape.render(c) }
 
 }

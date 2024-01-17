@@ -56,8 +56,8 @@ export default class Constraint extends Component
         let rn = pointA.cross(normal) ** 2 * this.a.invInertia + pointB.cross(normal) ** 2 * this.b.invInertia
         let share = 1 / (this.a.invMass + this.b.invMass + rn)
 
-        let v1 = this.a.velocity.add(new Vector2(-pointA.y * this.a.angularAcceleration, pointA.x * this.a.angularAcceleration))
-        let v2 = this.b.velocity.add(new Vector2(-pointB.y * this.b.angularAcceleration, pointB.x * this.b.angularAcceleration))
+        let v1 = this.a.velocity.add(new Vector2(-pointA.y * this.a.angularVelocity, pointA.x * this.a.angularVelocity))
+        let v2 = this.b.velocity.add(new Vector2(-pointB.y * this.b.angularVelocity, pointB.x * this.b.angularVelocity))
         let normalVelocity = v2.sub(v1).dot(normal)
 
         let j = -normalVelocity * share
@@ -80,19 +80,23 @@ export default class Constraint extends Component
     }
 
 
-    public debug(c: CanvasRenderingContext2D)
+    public render(c: CanvasRenderingContext2D)
     {
+        if (!this.scene.physics.debug) return
+
+        c.restore()
         c.strokeStyle = "black"
         c.strokeWidth = 1
 
         let [pointA, pointB] = this.localPoints
-        let u = this.a.entity.position.cast().add(pointA)
-        let v = this.b.entity.position.cast().add(pointB)
+        let u = this.a.position.add(pointA)
+        let v = this.b.position.add(pointB)
 
         c.beginPath()
         c.moveTo(u.x, u.y)
         c.lineTo(v.x, v.y)
         c.stroke()
+        c.save()
     }
 
 }

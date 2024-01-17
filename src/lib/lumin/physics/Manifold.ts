@@ -44,7 +44,7 @@ export default class Manifold
         let rv = this.relativeVelocity(r1, r2)
         let normalVelocity = rv.dot(normal)
 
-        if (normalVelocity > 0) return [] // Bodies are moving apart
+        if (normalVelocity > 0) return // Bodies are moving apart
 
         // Calculate impulse in normal direction
         let restitution = Math.min(this.a.restitution, this.b.restitution)
@@ -86,8 +86,8 @@ export default class Manifold
 
     private relativeVelocity(r1: Vector2, r2: Vector2): Vector2
     {
-        let v1 = this.a.velocity.add(new Vector2(-r1.y * this.a.angularAcceleration, r1.x * this.a.angularAcceleration))
-        let v2 = this.b.velocity.add(new Vector2(-r2.y * this.b.angularAcceleration, r2.x * this.b.angularAcceleration))
+        let v1 = this.a.velocity.add(new Vector2(-r1.y * this.a.angularVelocity, r1.x * this.a.angularVelocity))
+        let v2 = this.b.velocity.add(new Vector2(-r2.y * this.b.angularVelocity, r2.x * this.b.angularVelocity))
         return v2.sub(v1)
     }
 
@@ -107,7 +107,7 @@ export default class Manifold
     }
 
 
-    public debug(c: CanvasRenderingContext2D)
+    public render(c: CanvasRenderingContext2D)
     {
         c.strokeStyle = "red"
         c.fillStyle = "green"

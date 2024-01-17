@@ -1,18 +1,19 @@
 import { browser } from "$app/environment"
 
-import { Matrix4, Quaternion, Vector2, Vector3 } from "./Math"
+import { Matrix2, Vector2 } from "./Math"
 import type PhysicsEngine from "./physics/PhysicsEngine"
-import type RenderEngine from "./render/RenderEngine"
 
-const DEBUG = true
 const MAX_DELAY = 200
+
+// TODO: Entity parenting
 
 export default class Engine
 {
 
-    public scene: Scene | null = null
+    private readonly stack: Scene[] = []
+    private get scene(): Scene { return this.stack[this.stack.length - 1] }
 
-    public constructor(private readonly delta: number = 0.02)
+    public constructor(private readonly renderer: RenderEngine, private readonly delta: number = 0.02)
     {
         this.delta = delta
         this.frame = this.frame.bind(this)
@@ -25,11 +26,10 @@ export default class Engine
     private timer!: number
     public start()
     {
+        if (this.stack.length < 1) throw new Error("Engine scene must be set to start")
         this.timer = window.requestAnimationFrame(now =>
         {
             this.previous = now
-            this.scene?.update(this.delta)
-
             this.frame(now)
         })
     }
@@ -44,17 +44,109 @@ export default class Engine
         this.accumulated += now - this.previous
         this.previous = now
 
-        this.scene?.start()
         if (this.accumulated > MAX_DELAY) this.accumulated = MAX_DELAY // Prevent spiral of death
         while (this.accumulated > delay)
         {
             this.accumulated -= delay
-            this.scene?.update(this.delta)
+
+            this.scene.start()
+            this.scene.update(this.delta)
         }
 
         // Calculate alpha for interpolation
         let alpha = this.accumulated / delay
-        this.scene?.render(alpha)
+        this.scene.render(this.renderer, alpha)
+    }
+
+    private changeScene() { this.renderer.setCamera(this.scene.camera) } // Maintain renderer reference to camera
+    public enter(scene: Scene)
+    {
+        this.stack.push(scene)
+        this.changeScene()
+    }
+
+    public exit(): Scene
+    {
+        if (this.stack.length <= 1) throw new Error("Cannot exit scene")
+        let scene = this.stack.pop()!
+
+        this.changeScene()
+        return scene
+    }
+
+}
+
+export class RenderEngine
+{
+
+    public context: CanvasRenderingContext2D
+
+    public get width(): number  { return this.canvas.width }
+    public get height(): number { return this.canvas.height }
+
+    public constructor(public readonly canvas: HTMLCanvasElement, width: number, height: number)
+    {
+        this.resize(width, height)
+        let ratio = window.devicePixelRatio
+
+        this.context = canvas.getContext("2d")!
+        Object.defineProperty(this.context, "strokeWidth",
+        {
+            set: value => this.context.lineWidth = value * ratio * this.camera.size / this.height
+        })
+    }
+
+
+    public camera!: Camera
+    public setCamera(camera: Camera) { this.camera = camera }
+
+    public resize(width: number, height: number)
+    {
+        let ratio = window.devicePixelRatio
+
+        this.canvas.width = width * ratio
+        this.canvas.height = height * ratio
+    }
+
+    public toWorldSpace(screen: Vector2): Vector2
+    {
+        let camera = this.camera
+        let dimensions = new Vector2(this.width / 2, this.height / 2)
+
+        let world = screen.sub(dimensions).div(this.height / camera.size)
+        let rotation = Matrix2.rotate(camera.entity.rotation)
+
+        return rotation.vmul(new Vector2(world.x, -world.y)).add(camera.entity.position)
+    }
+
+    public toScreenSpace(world: Vector2): Vector2
+    {
+        let camera = this.camera
+        let dimensions = new Vector2(this.width / 2, this.height / 2)
+
+        let rotation = Matrix2.rotate(-camera.entity.rotation)
+        let screen = rotation.vmul(world.sub(camera.entity.position))
+
+        return new Vector2(screen.x, -screen.y).mul(this.height / camera.size).add(dimensions)
+    }
+
+    public render()
+    {
+        let c = this.context
+        c.restore()
+        c.save()
+        c.clearRect(0, 0, this.width, this.height)
+
+        // Center origin
+        c.translate(this.width / 2, this.height / 2)
+
+        // Apply transformations
+        let position = this.camera.entity.position.neg()
+        let scale = this.height / this.camera.size
+
+        c.scale(scale, -scale)
+        c.rotate(-this.camera.entity.rotation)
+        c.translate(position.x, position.y)
     }
 
 }
@@ -62,9 +154,9 @@ export default class Engine
 export class Scene
 {
 
-    private readonly entities: Entity[] = []
+    public readonly entities: Entity[] = []
 
-    public constructor(public readonly renderer: RenderEngine, public readonly physics: PhysicsEngine) { }
+    public constructor(public readonly physics: PhysicsEngine) { }
 
 
     private newEntities: Entity[] = []
@@ -74,6 +166,17 @@ export class Scene
         entity.scene = this
 
         this.newEntities.push(entity) // Defer init call to start of update cycle
+    }
+
+    public get camera(): Camera
+    {
+        for (let entity of this.newEntities.concat(this.entities))
+        {
+            let camera = entity.getComponent(Camera)
+            if (camera !== null) return camera
+        }
+
+        throw new Error("Scene does not have a camera")
     }
 
     public removeEntity(entity: Entity)
@@ -104,28 +207,25 @@ export class Scene
         this.physics.update(delta)
     }
 
-    public render(alpha: number)
+    public render(renderer: RenderEngine, alpha: number)
     {
+        let c = renderer.context
         for (let entity of this.entities) entity.update(alpha)
 
-        for (let entity of this.entities) entity.render()
-        this.renderer.render()
+        renderer.render()
+        this.physics.render(c)
 
-        // TODO: Move debug lines to new rendering engine
-        if (DEBUG) this.physics.debug(this.renderer.context)
+        for (let entity of this.entities) entity.render(c)
     }
 
 }
-
-// TODO: Entity parenting
 
 interface Constructor<T> { new(...args: any[]): T }
 export interface EntityParams
 {
 
-    position?: Vector3
-    rotation?: Quaternion
-    scale?: Vector3
+    position?: Vector2
+    rotation?: number
 
 }
 
@@ -134,19 +234,17 @@ export class Entity
 
     public scene!: Scene
 
-    public position: Vector3
-    public rotation: Quaternion
-    public scale: Vector3
+    public position: Vector2
+    public rotation: number
 
     public constructor(private readonly components: Component[],
-        { position = Vector3.ZERO, rotation = Quaternion.IDENTITY, scale = Vector3.ONE }: EntityParams = {})
+        { position = Vector2.ZERO, rotation = 0 }: EntityParams = {})
     {
         // Register components to this entity
         for (let component of components) component.entity = this
 
         this.position = position
         this.rotation = rotation
-        this.scale = scale
     }
 
 
@@ -190,19 +288,15 @@ export class Entity
     public fixedUpdate(delta: number) { for (let component of this.components) component.fixedUpdate(delta) }
     public update(alpha: number)      { for (let component of this.components) component.update(alpha) }
 
-    public transform!: Matrix4
-    public normal!: Matrix4
-
-    public render()
+    public render(c: CanvasRenderingContext2D)
     {
-        let transform = Matrix4.translate(this.position)
-        if (!this.rotation.equals(Quaternion.IDENTITY)) transform = transform.mul(Matrix4.rotate(this.rotation))
-        if (!this.scale.equals(Vector3.ONE)) transform = transform.mul(Matrix4.scale(this.scale))
+        // Apply transformations
+        c.save()
+        c.translate(this.position.x, this.position.y)
+        c.rotate(this.rotation)
 
-        this.transform = transform
-        this.normal = transform.inverse().transpose()
-
-        for (let component of this.components) component.render()
+        for (let component of this.components) component.render(c)
+        c.restore()
     }
 
 }
@@ -222,7 +316,14 @@ export abstract class Component
     public fixedUpdate(delta: number) { }
     public update(alpha: number) { }
 
-    public render() { }
+    public render(c: CanvasRenderingContext2D) { }
+
+}
+
+export class Camera extends Component
+{
+
+    public constructor(public size: number = 20) { super() }
 
 }
 
