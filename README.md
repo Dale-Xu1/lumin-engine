@@ -10,7 +10,7 @@ The engine is initialized with the following code:
 
 Note that `CustomScene` is defined by the user; code showing how to initialize an example scene can be found in `ExampleScene.ts`.
 
-```
+```javascript
 import * as Lumin from "./lumin/Lumin"
 
 Lumin.init(new Lumin.RenderEngine(canvas, width, height))
