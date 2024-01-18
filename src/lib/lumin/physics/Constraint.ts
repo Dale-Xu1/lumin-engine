@@ -83,6 +83,7 @@ export default class Constraint extends Component
     public render(c: CanvasRenderingContext2D)
     {
         if (!this.scene.physics.debug) return
+        let transform = c.getTransform()
 
         c.restore()
         c.strokeStyle = "black"
@@ -96,7 +97,9 @@ export default class Constraint extends Component
         c.moveTo(u.x, u.y)
         c.lineTo(v.x, v.y)
         c.stroke()
+
         c.save()
+        c.setTransform(transform)
     }
 
 }
