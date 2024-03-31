@@ -65,7 +65,7 @@ export default class ExampleScene extends Lumin.Scene
             let shape = Math.random() < 0.5 ? new Circle(Math.random() * 0.4 + 0.2) : new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
             this.addEntity(new Entity([new RigidBody(shape)],
             {
-                position: new Vector2(Math.random() * 2 - 1, 0),
+                position: new Vector2(Math.random() * 10 - 5, Math.random() * 4),
                 rotation: Math.random() * 2 * Math.PI
             }))
         }
@@ -77,14 +77,14 @@ export default class ExampleScene extends Lumin.Scene
 
         this.addEntity(new Entity([new RigidBody(new Rectangle(0.5, 0.5), { density: 20, gravityScale: 0 }), new Control()], { position: new Vector2(0, 5) }))
 
-        let a = new RigidBody(new Rectangle(1, 1))
-        let b = new RigidBody(new Rectangle(1, 1))
-        let c = new RigidBody(new Rectangle(1, 1))
-        let d = new RigidBody(new Rectangle(1, 1))
-        this.addEntity(new Entity([a, new Constraint(2, a, b), new Constraint(Math.sqrt(8), a, c)], { position: new Vector2(-5, 2) }))
-        this.addEntity(new Entity([b, new Constraint(2, b, c), new Constraint(Math.sqrt(8), b, d)], { position: new Vector2(-5, 4) }))
-        this.addEntity(new Entity([c, new Constraint(2, c, d)], { position: new Vector2(-3, 4) }))
-        this.addEntity(new Entity([d, new Constraint(2, d, a)], { position: new Vector2(-3, 2) }))
+        // let a = new RigidBody(new Rectangle(1, 1))
+        // let b = new RigidBody(new Rectangle(1, 1))
+        // let c = new RigidBody(new Rectangle(1, 1))
+        // let d = new RigidBody(new Rectangle(1, 1))
+        // this.addEntity(new Entity([a, new Constraint(2, a, b), new Constraint(Math.sqrt(8), a, c)], { position: new Vector2(-5, 2) }))
+        // this.addEntity(new Entity([b, new Constraint(2, b, c), new Constraint(Math.sqrt(8), b, d)], { position: new Vector2(-5, 4) }))
+        // this.addEntity(new Entity([c, new Constraint(2, c, d)], { position: new Vector2(-3, 4) }))
+        // this.addEntity(new Entity([d, new Constraint(2, d, a)], { position: new Vector2(-3, 2) }))
 
         let start = new RigidBody(new Rectangle(0.5, 0.5), { type: BodyType.Static })
         let chain: RigidBody<Shape>[] = []

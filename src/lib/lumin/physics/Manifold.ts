@@ -2,6 +2,7 @@ import { Vector2 } from "../Math"
 import type RigidBody from "./RigidBody"
 import type Shape from "./Shape"
 
+const BIAS_FACTOR = 0.2
 const SLOP = 0.01
 
 export default class Manifold
@@ -14,7 +15,6 @@ export default class Manifold
     public readonly normal: Vector2
 
     public readonly penetration: number
-    private readonly separation: number
 
 
     public constructor(a: RigidBody<Shape>, b: RigidBody<Shape>, contacts: Vector2[], normal: Vector2, penetration: number)
@@ -26,12 +26,11 @@ export default class Manifold
         this.normal = normal
 
         this.penetration = penetration
-        this.separation = this.b.position.sub(this.a.position).dot(normal)
     }
 
 
-    public resolve() { for (let contact of this.contacts) this.applyImpulse(contact) }
-    private applyImpulse(start: Vector2)
+    public resolve(delta: number) { for (let contact of this.contacts) this.applyImpulse(contact, delta) }
+    private applyImpulse(start: Vector2, delta: number)
     {
         if (this.penetration < SLOP) return
         let [r1, r2] = this.calculateContact(start)
@@ -40,23 +39,26 @@ export default class Manifold
         let rn = r1.cross(normal) ** 2 * this.a.invInertia + r2.cross(normal) ** 2 * this.b.invInertia
         let share = 1 / ((this.a.invMass + this.b.invMass + rn) * this.contacts.length)
 
-        // Calculate normal velocity
         let rv = this.relativeVelocity(r1, r2)
-        let normalVelocity = rv.dot(normal)
 
-        if (normalVelocity > 0) return // Bodies are moving apart
+        // Calculate normal velocity
+        let bias = BIAS_FACTOR / delta * (this.penetration - SLOP)
+        let normalVelocity = -rv.dot(normal) + bias
+
+        if (normalVelocity < 0) return // Bodies are moving apart
 
         // Calculate impulse in normal direction
         let restitution = Math.min(this.a.restitution, this.b.restitution)
-        let jn = -(1 + restitution) * normalVelocity * share
+        let jn = (1 + restitution) * normalVelocity * share
 
         let normalImpulse = normal.mul(jn)
 
         this.a.applyImpulse(normalImpulse.neg(), r1)
         this.b.applyImpulse(normalImpulse, r2)
 
-        // Calculate impulse in tangent direction
         rv = this.relativeVelocity(r1, r2) // Recalculate relative velocity
+
+        // Calculate impulse in tangent direction
         let tangent = rv.sub(normal.mul(rv.dot(normal))).normalize()
         let jt = -rv.dot(tangent) * share
 
@@ -71,7 +73,7 @@ export default class Manifold
         this.a.applyImpulse(tangentImpulse.neg(), r1)
         this.b.applyImpulse(tangentImpulse, r2)
     }
-    
+
     private calculateContact(start: Vector2): [Vector2, Vector2]
     {
         let end = start.add(this.normal.mul(this.penetration))
@@ -89,21 +91,6 @@ export default class Manifold
         let v1 = this.a.velocity.add(new Vector2(-r1.y * this.a.angularVelocity, r1.x * this.a.angularVelocity))
         let v2 = this.b.velocity.add(new Vector2(-r2.y * this.b.angularVelocity, r2.x * this.b.angularVelocity))
         return v2.sub(v1)
-    }
-
-    public correctPositions(rate: number)
-    {
-        // Calculate updated penetration
-        let separation = this.b.position.sub(this.a.position).dot(this.normal) - this.separation
-        let penetration = this.penetration - separation
-        if (penetration < SLOP) return
-
-        // Distribute correction based on masses
-        let total = this.a.invMass + this.b.invMass
-        let correction = Math.max(penetration - SLOP, 0) / total * rate
-
-        this.a.position = this.a.position.sub(this.normal.mul(correction * this.a.invMass))
-        this.b.position = this.b.position.add(this.normal.mul(correction * this.b.invMass))
     }
 
 

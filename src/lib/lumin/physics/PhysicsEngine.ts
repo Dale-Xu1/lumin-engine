@@ -13,9 +13,6 @@ export interface PhysicsParams
     gravity?: Vector2
 
     iterations?: number
-    positionIterations?: number
-
-    correctionRate?: number
 
 }
 
@@ -28,26 +25,19 @@ export default class PhysicsEngine
     private readonly constraints: Constraint[] = []
 
     private readonly gravity: Vector2
-
     private readonly iterations: number
-    private readonly positionIterations: number
-
-    private readonly correctionRate: number
 
     public constructor(
     {
         debug = false,
         gravity = Vector2.DOWN.mul(9.81),
-        iterations = 16, positionIterations = 12,
-        correctionRate = 0.7
+        iterations = 20
     }: PhysicsParams = {})
     {
         this.debug = debug
         this.gravity = gravity
 
         this.iterations = iterations
-        this.positionIterations = positionIterations
-        this.correctionRate = correctionRate
     }
 
     public addBody(body: RigidBody<Shape>) { this.bodies.push(body) }
@@ -107,14 +97,8 @@ export default class PhysicsEngine
 
         for (let i = 0; i < this.iterations; i++)
         {
-            for (let constraint of this.constraints) constraint.resolve()
-            for (let collision of this.collisions) collision.resolve()
-        }
-
-        for (let i = 0; i < this.positionIterations; i++)
-        {
-            for (let constraint of this.constraints) constraint.correctPositions(this.correctionRate)
-            for (let collision of this.collisions) collision.correctPositions(this.correctionRate)
+            for (let constraint of this.constraints) constraint.resolve(delta)
+            for (let collision of this.collisions) collision.resolve(delta)
         }
     }
 
