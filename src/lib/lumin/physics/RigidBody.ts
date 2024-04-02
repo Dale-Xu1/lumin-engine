@@ -11,9 +11,7 @@ export interface BodyParams
 
     density?: number
     restitution?: number
-
-    kineticFriction?: number
-    staticFriction?: number
+    friction?: number
 
     gravityScale?: number
 
@@ -43,6 +41,7 @@ export default class RigidBody<T extends Shape> extends Component
     }
 
     public restitution: number
+    public friction: number
 
     public mass!: number
     public invMass!: number
@@ -50,16 +49,12 @@ export default class RigidBody<T extends Shape> extends Component
     public inertia!: number
     public invInertia!: number
 
-    public kineticFriction: number
-    public staticFriction: number
-
     public gravityScale: number
 
     public constructor(public readonly shape: T,
     {
         type = BodyType.Dynamic,
-        density = 1, restitution = 0.1,
-        kineticFriction = 0.3, staticFriction = 0.5,
+        density = 1, restitution = 0.2, friction = 0.5,
         gravityScale = 1
     }: BodyParams = {})
     {
@@ -69,9 +64,7 @@ export default class RigidBody<T extends Shape> extends Component
 
         this.density = density
         this.restitution = restitution
-
-        this.kineticFriction = kineticFriction
-        this.staticFriction = staticFriction
+        this.friction = friction
 
         this.gravityScale = gravityScale
         this.shape.update(this)
@@ -122,12 +115,12 @@ export default class RigidBody<T extends Shape> extends Component
     private previousPosition!: Vector2 // Previous data is kept for interpolation
     private previousAngle!: number
 
-    public integrate(delta: number, gravity: Vector2)
+    public integrate(dt: number, gravity: Vector2)
     {
         this.previousPosition = this.position
         this.previousAngle = this.angle
 
-        if (this.type === BodyType.Dynamic) this.dynamicUpdate(delta, gravity)
+        if (this.type === BodyType.Dynamic) this.dynamicUpdate(dt, gravity)
         else this.staticUpdate()
 
         // Clear forces and torque
@@ -137,17 +130,17 @@ export default class RigidBody<T extends Shape> extends Component
         this.shape.update(this)
     }
 
-    private dynamicUpdate(delta: number, gravity: Vector2)
+    private dynamicUpdate(dt: number, gravity: Vector2)
     {
         // Integrate position
         let acceleration = this.force.mul(this.invMass).add(gravity.mul(this.gravityScale))
-        this.velocity = this.velocity.add(acceleration.mul(delta))
-        this.position = this.position.add(this.velocity.mul(delta))
+        this.velocity = this.velocity.add(acceleration.mul(dt))
+        this.position = this.position.add(this.velocity.mul(dt))
 
         // Integrate angle
         let angularAcceleration = this.torque * this.invInertia
-        this.angularVelocity += angularAcceleration * delta
-        this.angle += this.angularVelocity * delta
+        this.angularVelocity += angularAcceleration * dt
+        this.angle += this.angularVelocity * dt
     }
 
     private staticUpdate()
