@@ -68,10 +68,10 @@ export default class Constraint extends Component
 
         let v1 = this.a.velocity.add(new Vector2(-r1.y * this.a.angularVelocity, r1.x * this.a.angularVelocity))
         let v2 = this.b.velocity.add(new Vector2(-r2.y * this.b.angularVelocity, r2.x * this.b.angularVelocity))
-        let dv = v2.sub(v1)
+        let rv = v2.sub(v1)
 
         let bias = BIAS_FACTOR / dt * (offset.length - this.length)
-        let normalVelocity = -dv.dot(normal) + bias
+        let normalVelocity = -rv.dot(normal) + bias
 
         let j = normalVelocity * share
         let impulse = normal.mul(j)

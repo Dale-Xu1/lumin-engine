@@ -60,7 +60,7 @@ export default class ExampleScene extends Lumin.Scene
         this.addEntity(new Entity([new Lumin.Camera()]))
         this.addEntity(new Entity([new AddBody()]))
 
-        for (let i = 0; i < 50; i++)
+        for (let i = 0; i < 100; i++)
         {
             let shape = Math.random() < 0.5 ? new Circle(Math.random() * 0.4 + 0.2) : new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
             this.addEntity(new Entity([new RigidBody(shape)],

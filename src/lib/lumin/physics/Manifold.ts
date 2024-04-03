@@ -16,9 +16,6 @@ export default class Manifold
 
     public readonly penetration: number
 
-    private normalImpulse: number = 0
-    private tangentImpulse: number = 0
-
 
     public constructor(a: RigidBody<Shape>, b: RigidBody<Shape>, contacts: Vector2[], normal: Vector2, penetration: number)
     {
@@ -39,18 +36,17 @@ export default class Manifold
         let normal = this.normal
 
         let rn = r1.cross(normal) ** 2 * this.a.invInertia + r2.cross(normal) ** 2 * this.b.invInertia
-        let share = 1 / ((this.a.invMass + this.b.invMass + rn) * this.contacts.length)
+        let share = 1 / (this.a.invMass + this.b.invMass + rn)
 
         let rv = this.relativeVelocity(r1, r2)
 
         // Calculate normal velocity
+        let restitution = Math.min(this.a.restitution, this.b.restitution)
         let bias = BIAS_FACTOR / delta * Math.max(this.penetration - SLOP, 0)
-        let normalVelocity = -rv.dot(normal) + bias
-        if (normalVelocity < 0) return // Bodies are moving apart
 
         // Calculate impulse in normal direction
-        let restitution = Math.min(this.a.restitution, this.b.restitution)
-        let jn = (1 + restitution) * normalVelocity * share
+        let normalVelocity = -(1 + restitution) * rv.dot(normal)
+        let jn = Math.max(normalVelocity + bias, 0) * share
 
         let normalImpulse = normal.mul(jn)
         this.a.applyImpulse(normalImpulse.neg(), r1)
@@ -124,81 +120,54 @@ export default class Manifold
 
 }
 
-    // private applyImpulse(start: Vector2, dt: number)
-    // {
-    //     let [r1, r2] = this.calculateContact(start)
+// private applyImpulse(start: Vector2, delta: number)
+// {
+//     let [r1, r2] = this.calculateContact(start)
+//     let normal = this.normal
 
-    //     let normal = this.normal
-    //     let restitution = Math.min(this.a.restitution, this.b.restitution)
-    //     let friction = (this.a.friction + this.b.friction) / 2
+//     let rn = r1.cross(normal) ** 2 * this.a.invInertia + r2.cross(normal) ** 2 * this.b.invInertia
+//     let share = 1 / (this.a.invMass + this.b.invMass + rn)
 
-    //     let rn = r1.cross(normal) ** 2 * this.a.invInertia + r2.cross(normal) ** 2 * this.b.invInertia
-    //     let share = 1 / (this.a.invMass + this.b.invMass + rn) / this.contacts.length
+//     let rv = this.relativeVelocity(r1, r2)
 
-    //     let rv = this.relativeVelocity(r1, r2)
+//     // Calculate normal velocity
+//     let restitution = 0 // Math.min(this.a.restitution, this.b.restitution)
+//     let bias = BIAS_FACTOR / delta * Math.max(this.penetration - SLOP, 0)
 
-    //     // Calculate impulse in normal direction
-    //     let bias = BIAS_FACTOR / dt * Math.max(this.penetration - SLOP, 0)
-    //     let normalVelocity = -(1 + restitution) * rv.dot(normal) + bias
+//     // Calculate impulse in normal direction
+//     let normalVelocity = -(1 + restitution) * rv.dot(normal)
+//     let jn = (normalVelocity + bias) * share
 
-    //     // Clamp accumulated impulse
-    //     let an = this.normalImpulse
-    //     this.normalImpulse = Math.max(this.normalImpulse + normalVelocity * share, 0)
+//     // TODO: Why can't it converge when restitution > 0?
+//     // console.log(jn)
 
-    //     let jn = this.normalImpulse - an
-    //     let normalImpulse = normal.mul(jn)
+//     // jn = Math.max(jn, 0)
+//     let previousNormal = this.normalImpulse
+//     this.normalImpulse = Math.max(this.normalImpulse + jn, 0)
+//     jn = this.normalImpulse - previousNormal
 
-    //     this.a.applyImpulse(normalImpulse.neg(), r1)
-    //     this.b.applyImpulse(normalImpulse, r2)
+//     let normalImpulse = normal.mul(jn)
+//     this.a.applyImpulse(normalImpulse.neg(), r1)
+//     this.b.applyImpulse(normalImpulse, r2)
 
-    //     // Calculate impulse in tangent direction
-    //     let tangent = normal.orthogonal()
-    //     rv = this.relativeVelocity(r1, r2) // Recalculate relative velocity
-    //     let jt = -rv.dot(tangent) * share
+//     // rv = this.relativeVelocity(r1, r2) // Recalculate relative velocity
 
-    //     // Clamp accumulated impulse
-    //     let range = friction * this.normalImpulse
-    //     let at = this.tangentImpulse
-    //     this.tangentImpulse = Math.min(Math.max(this.tangentImpulse + jt, -range), range)
+//     // // Calculate impulse in tangent direction
+//     // let tangent = normal.orthogonal()
+//     // let jt = -rv.dot(tangent) * share
 
-    //     let tangentImpulse = tangent.mul(this.tangentImpulse - at)
-    //     this.a.applyImpulse(tangentImpulse.neg(), r1)
-    //     this.b.applyImpulse(tangentImpulse, r2)
-    // }
+//     // let friction = (this.a.friction + this.b.friction) / 2
+//     // let range = friction * this.normalImpulse
 
-    // private applyImpulse(start: Vector2, dt: number)
-    // {
-    //     let [r1, r2] = this.calculateContact(start)
+//     // // jt = Math.min(Math.max(jt, -range), range)
+//     // let previousTangent = this.tangentImpulse
+//     // this.tangentImpulse = Math.min(Math.max(this.tangentImpulse + jt, -range), range)
+//     // jt = this.tangentImpulse - previousTangent
 
-    //     let normal = this.normal
-    //     let restitution = Math.min(this.a.restitution, this.b.restitution)
-    //     let friction = (this.a.friction + this.b.friction) / 2
+//     // let tangentImpulse = tangent.mul(jt)
+//     // this.a.applyImpulse(tangentImpulse.neg(), r1)
+//     // this.b.applyImpulse(tangentImpulse, r2)
 
-    //     let rn = r1.cross(normal) ** 2 * this.a.invInertia + r2.cross(normal) ** 2 * this.b.invInertia
-    //     let share = 1 / (this.a.invMass + this.b.invMass + rn) / this.contacts.length
-
-    //     let rv = this.relativeVelocity(r1, r2)
-
-    //     // Calculate impulse in normal direction
-    //     let bias = BIAS_FACTOR / dt * Math.max(this.penetration - SLOP, 0)
-    //     let normalVelocity = -(1 + restitution) * rv.dot(normal) + bias
-
-    //     let jn = Math.max(normalVelocity * share, 0)
-    //     let normalImpulse = normal.mul(jn)
-
-    //     this.a.applyImpulse(normalImpulse.neg(), r1)
-    //     this.b.applyImpulse(normalImpulse, r2)
-
-    //     // Calculate impulse in tangent direction
-    //     let tangent = normal.orthogonal()
-    //     rv = this.relativeVelocity(r1, r2) // Recalculate relative velocity
-
-    //     let tangentVelocity = -rv.dot(tangent) * share
-
-    //     let range = friction * jn
-    //     let jt = Math.min(Math.max(tangentVelocity, -range), range)
-    //     let tangentImpulse = tangent.mul(jt)
-
-    //     this.a.applyImpulse(tangentImpulse.neg(), r1)
-    //     this.b.applyImpulse(tangentImpulse, r2)
-    // }
+//     // this.normalImpulse = 0
+//     // this.tangentImpulse = 0
+// }

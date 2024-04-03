@@ -90,8 +90,6 @@ export default class PhysicsEngine
     private collisions: Manifold[] = []
     public update(dt: number)
     {
-        for (let body of this.bodies) body.integrate(dt, this.gravity)
-
         let detector = new Detector(this.bodies)
         this.collisions = detector.detect()
 
@@ -101,6 +99,8 @@ export default class PhysicsEngine
             for (let constraint of this.constraints) constraint.resolve(dt)
             for (let collision of this.collisions) collision.resolve(dt)
         }
+
+        for (let body of this.bodies) body.integrate(dt, this.gravity)
     }
 
     public render(c: CanvasRenderingContext2D)

@@ -54,7 +54,7 @@ export default class RigidBody<T extends Shape> extends Component
     public constructor(public readonly shape: T,
     {
         type = BodyType.Dynamic,
-        density = 1, restitution = 0.2, friction = 0.5,
+        density = 1, restitution = 0.2, friction = 0.4,
         gravityScale = 1
     }: BodyParams = {})
     {
