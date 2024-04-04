@@ -15,6 +15,7 @@ export default class Manifold
     public readonly normal: Vector2
 
     public readonly penetration: number
+    private readonly separation: number
 
 
     public constructor(a: RigidBody<Shape>, b: RigidBody<Shape>, contacts: Vector2[], normal: Vector2, penetration: number)
@@ -26,52 +27,65 @@ export default class Manifold
         this.normal = normal
 
         this.penetration = penetration
+        this.separation = this.b.position.sub(this.a.position).dot(normal)
     }
 
 
-    public resolve(delta: number) { for (let contact of this.contacts) this.applyImpulse(contact, delta) }
-    private applyImpulse(start: Vector2, delta: number)
+    public resolve()
     {
-        if (this.penetration < SLOP) return
-        let [r1, r2] = this.calculateContact(start)
+        this.correctPositions()
+        for (let contact of this.contacts) this.applyImpulse(contact)
+    }
 
+    private applyImpulse(start: Vector2)
+    {
+        let [r1, r2] = this.calculateContact(start)
         let normal = this.normal
+
         let rn = r1.cross(normal) ** 2 * this.a.invInertia + r2.cross(normal) ** 2 * this.b.invInertia
-        let share = 1 / ((this.a.invMass + this.b.invMass + rn) * this.contacts.length)
+        let share = 1 / (this.a.invMass + this.b.invMass + rn) / this.contacts.length
 
         let rv = this.relativeVelocity(r1, r2)
 
-        // Calculate normal velocity
-        let bias = BIAS_FACTOR / delta * (this.penetration - SLOP)
-        let normalVelocity = -rv.dot(normal) + bias
-
-        if (normalVelocity < 0) return // Bodies are moving apart
-
         // Calculate impulse in normal direction
         let restitution = Math.min(this.a.restitution, this.b.restitution)
+        let normalVelocity = -rv.dot(normal)
+        if (normalVelocity < 0) return
+
         let jn = (1 + restitution) * normalVelocity * share
 
         let normalImpulse = normal.mul(jn)
-
         this.a.applyImpulse(normalImpulse.neg(), r1)
         this.b.applyImpulse(normalImpulse, r2)
 
         rv = this.relativeVelocity(r1, r2) // Recalculate relative velocity
 
         // Calculate impulse in tangent direction
-        let tangent = rv.sub(normal.mul(rv.dot(normal))).normalize()
-        let jt = -rv.dot(tangent) * share
+        let tangent = normal.orthogonal()
+        let tangentVelocity = -rv.dot(tangent)
 
-        // Coulomb's Law
-        let friction = (this.a.kineticFriction + this.b.kineticFriction) / 2
-        let staticFriction = (this.a.staticFriction + this.b.staticFriction) / 2
+        let friction = (this.a.friction + this.b.friction) / 2
+        let range = friction * jn
+        let jt = Math.min(Math.max(tangentVelocity * share, -range), range)
 
-        let tangentImpulse: Vector2
-        if (Math.abs(jt) < jn * staticFriction) tangentImpulse = tangent.mul(jt)
-        else tangentImpulse = tangent.mul(-jn * friction)
-
+        let tangentImpulse = tangent.mul(jt)
         this.a.applyImpulse(tangentImpulse.neg(), r1)
         this.b.applyImpulse(tangentImpulse, r2)
+    }
+
+    private correctPositions()
+    {
+        // Calculate updated penetration
+        let separation = this.b.position.sub(this.a.position).dot(this.normal) - this.separation
+        let penetration = this.penetration - separation
+        if (penetration < SLOP) return
+
+        // Distribute correction based on masses
+        let share = 1 / (this.a.invMass + this.b.invMass)
+        let correction = BIAS_FACTOR * (penetration - SLOP) * share
+
+        this.a.position = this.a.position.sub(this.normal.mul(correction * this.a.invMass))
+        this.b.position = this.b.position.add(this.normal.mul(correction * this.b.invMass))
     }
 
     private calculateContact(start: Vector2): [Vector2, Vector2]
@@ -126,3 +140,59 @@ export default class Manifold
     }
 
 }
+
+// TODO: Test code for accumulated impulses
+//  - Issues: Convergence doesn't occur when restitution > 0 (Suggests error with math)
+//            Friction is unstable (Unknown cause, possibly because normal impulses are incorrect though issue is
+//            still present event when restitution = 0)
+
+// private applyImpulse(start: Vector2, delta: number)
+// {
+//     let [r1, r2] = this.calculateContact(start)
+//     let normal = this.normal
+
+//     let rn = r1.cross(normal) ** 2 * this.a.invInertia + r2.cross(normal) ** 2 * this.b.invInertia
+//     let share = 1 / (this.a.invMass + this.b.invMass + rn)
+
+//     let rv = this.relativeVelocity(r1, r2)
+
+//     // Calculate normal velocity
+//     let restitution = 0 // Math.min(this.a.restitution, this.b.restitution)
+//     let bias = BIAS_FACTOR / delta * Math.max(this.penetration - SLOP, 0)
+
+//     // Calculate impulse in normal direction
+//     let normalVelocity = -(1 + restitution) * rv.dot(normal)
+//     let jn = (normalVelocity + bias) * share
+
+//     // console.log(jn)
+
+//     // jn = Math.max(jn, 0)
+//     let previousNormal = this.normalImpulse
+//     this.normalImpulse = Math.max(this.normalImpulse + jn, 0)
+//     jn = this.normalImpulse - previousNormal
+
+//     let normalImpulse = normal.mul(jn)
+//     this.a.applyImpulse(normalImpulse.neg(), r1)
+//     this.b.applyImpulse(normalImpulse, r2)
+
+//     // rv = this.relativeVelocity(r1, r2) // Recalculate relative velocity
+
+//     // // Calculate impulse in tangent direction
+//     // let tangent = normal.orthogonal()
+//     // let jt = -rv.dot(tangent) * share
+
+//     // let friction = (this.a.friction + this.b.friction) / 2
+//     // let range = friction * this.normalImpulse
+
+//     // // jt = Math.min(Math.max(jt, -range), range)
+//     // let previousTangent = this.tangentImpulse
+//     // this.tangentImpulse = Math.min(Math.max(this.tangentImpulse + jt, -range), range)
+//     // jt = this.tangentImpulse - previousTangent
+
+//     // let tangentImpulse = tangent.mul(jt)
+//     // this.a.applyImpulse(tangentImpulse.neg(), r1)
+//     // this.b.applyImpulse(tangentImpulse, r2)
+
+//     // this.normalImpulse = 0
+//     // this.tangentImpulse = 0
+// }

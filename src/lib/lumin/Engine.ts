@@ -11,9 +11,8 @@ export default class Engine
     private readonly stack: Scene[] = []
     private get scene(): Scene { return this.stack[this.stack.length - 1] }
 
-    public constructor(private readonly renderer: RenderEngine, private readonly delta: number = 0.02)
+    public constructor(private readonly renderer: RenderEngine, private readonly dt: number = 0.02)
     {
-        this.delta = delta
         this.frame = this.frame.bind(this)
     }
 
@@ -36,7 +35,7 @@ export default class Engine
     private frame(now: number)
     {
         window.requestAnimationFrame(this.frame)
-        let delay = this.delta * 1000 // Convert to milliseconds
+        let delay = this.dt * 1000 // Convert to milliseconds
 
         // Accumulate lagged time
         this.accumulated += now - this.previous
@@ -48,7 +47,7 @@ export default class Engine
             this.accumulated -= delay
 
             this.scene.start()
-            this.scene.update(this.delta)
+            this.scene.update(this.dt)
         }
 
         // Calculate alpha for interpolation
@@ -199,10 +198,10 @@ export class Scene
         if (this.newEntities.length > 0) this.start() // Recurse because of possibility a component added a new entity
     }
 
-    public update(delta: number)
+    public update(dt: number)
     {
-        for (let entity of this.entities) entity.fixedUpdate(delta)
-        this.physics.update(delta)
+        for (let entity of this.entities) entity.fixedUpdate(dt)
+        this.physics.update(dt)
     }
 
     public render(renderer: RenderEngine, alpha: number)
@@ -283,8 +282,8 @@ export class Entity
 
     public destroy() { for (let component of this.components) component.destroy() }
 
-    public fixedUpdate(delta: number) { for (let component of this.components) component.fixedUpdate(delta) }
-    public update(alpha: number)      { for (let component of this.components) component.update(alpha) }
+    public fixedUpdate(dt: number) { for (let component of this.components) component.fixedUpdate(dt) }
+    public update(alpha: number)   { for (let component of this.components) component.update(alpha) }
 
     public render(c: CanvasRenderingContext2D)
     {
@@ -311,7 +310,7 @@ export abstract class Component
     public init() { }
     public destroy() { }
 
-    public fixedUpdate(delta: number) { }
+    public fixedUpdate(dt: number) { }
     public update(alpha: number) { }
 
     public render(c: CanvasRenderingContext2D) { }

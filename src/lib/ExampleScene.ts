@@ -60,7 +60,7 @@ export default class ExampleScene extends Lumin.Scene
         this.addEntity(new Entity([new Lumin.Camera()]))
         this.addEntity(new Entity([new AddBody()]))
 
-        for (let i = 0; i < 50; i++)
+        for (let i = 0; i < 100; i++)
         {
             let shape = Math.random() < 0.5 ? new Circle(Math.random() * 0.4 + 0.2) : new Rectangle(Math.random() * 0.8 + 0.4, Math.random() * 0.8 + 0.4)
             this.addEntity(new Entity([new RigidBody(shape)],
@@ -77,33 +77,33 @@ export default class ExampleScene extends Lumin.Scene
 
         this.addEntity(new Entity([new RigidBody(new Rectangle(0.5, 0.5), { density: 20, gravityScale: 0 }), new Control()], { position: new Vector2(0, 5) }))
 
-        // let a = new RigidBody(new Rectangle(1, 1))
-        // let b = new RigidBody(new Rectangle(1, 1))
-        // let c = new RigidBody(new Rectangle(1, 1))
-        // let d = new RigidBody(new Rectangle(1, 1))
-        // this.addEntity(new Entity([a, new Constraint(2, a, b), new Constraint(Math.sqrt(8), a, c)], { position: new Vector2(-5, 2) }))
-        // this.addEntity(new Entity([b, new Constraint(2, b, c), new Constraint(Math.sqrt(8), b, d)], { position: new Vector2(-5, 4) }))
-        // this.addEntity(new Entity([c, new Constraint(2, c, d)], { position: new Vector2(-3, 4) }))
-        // this.addEntity(new Entity([d, new Constraint(2, d, a)], { position: new Vector2(-3, 2) }))
+        // for (let n = 1; n <= 6; n++)
+        // {
+        //     for (let i = 0; i < n; i++)
+        //     {
+        //         this.addEntity(new Entity([new RigidBody(new Rectangle(1, 1))],
+        //             { position: new Vector2(1.1 * i - 1.1 * n / 2, 5 - 1.2 * n) }))
+        //     }
+        // }
 
         let start = new RigidBody(new Rectangle(0.5, 0.5), { type: BodyType.Static })
         let chain: RigidBody<Shape>[] = []
-        for (let i = 0; i < 8; i++)
+        for (let i = 0; i < 6; i++)
         {
             let body = new RigidBody(new Rectangle(0.2, 0.5))
             chain.push(body)
         }
 
         let y = 4
-        this.addEntity(new Entity([start, new Constraint(0.5, start, chain[0], { pointA: Vector2.ZERO, pointB: Vector2.UP.mul(0.15) })], { position: new Vector2(4, y) }))
+        this.addEntity(new Entity([start, new Constraint(0.5, start, chain[0], { pointA: Vector2.ZERO, pointB: Vector2.UP.mul(0.15) })], { position: new Vector2(8, y) }))
         for (let i = 0; i < chain.length - 1; i++)
         {
             let a = chain[i], b = chain[i + 1]
             y -= 0.6
 
-            this.addEntity(new Entity([a, new Constraint(0.25, a, b, { pointA: Vector2.DOWN.mul(0.15), pointB: Vector2.UP.mul(0.15) })], { position: new Vector2(4, y) }))
+            this.addEntity(new Entity([a, new Constraint(0.3, a, b, { pointA: Vector2.DOWN.mul(0.15), pointB: Vector2.UP.mul(0.15) })], { position: new Vector2(8, y) }))
         }
-        this.addEntity(new Entity([chain[chain.length - 1]], { position: new Vector2(4, y - 0.6) }))
+        this.addEntity(new Entity([chain[chain.length - 1]], { position: new Vector2(8, y - 0.6) }))
     }
 
 }

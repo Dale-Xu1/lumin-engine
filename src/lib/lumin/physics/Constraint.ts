@@ -19,6 +19,8 @@ export default class Constraint extends Component
     public readonly pointA: Vector2
     public readonly pointB: Vector2
 
+    private accumulated: number = 0
+
     public constructor(public length: number,
         public readonly a: RigidBody<Shape>, public readonly b: RigidBody<Shape>,
     {
@@ -42,37 +44,52 @@ export default class Constraint extends Component
         return [a.vmul(this.pointA), b.vmul(this.pointB)]
     }
 
-    private calculateOffset(): Vector2
+    public start()
     {
-        let [pointA, pointB] = this.localPoints
-        let delta = this.a.position.add(pointA).sub(this.b.position.add(pointB))
+        let [r1, r2] = this.localPoints
 
-        return delta
+        let normal = this.a.position.add(r1).sub(this.b.position.add(r2)).normalize()
+        let impulse = normal.mul(this.accumulated)
+
+        // Warm start
+        this.a.applyImpulse(impulse.neg(), r1)
+        this.b.applyImpulse(impulse, r2)
     }
 
-    public resolve(delta: number)
+    public resolve()
     {
-        let [pointA, pointB] = this.localPoints
+        this.correctPositions()
 
-        let offset = this.calculateOffset()
-        let normal = offset.normalize()
+        let [r1, r2] = this.localPoints
+        let normal = this.a.position.add(r1).sub(this.b.position.add(r2)).normalize()
 
-        let rn = pointA.cross(normal) ** 2 * this.a.invInertia + pointB.cross(normal) ** 2 * this.b.invInertia
+        let rn = r1.cross(normal) ** 2 * this.a.invInertia + r2.cross(normal) ** 2 * this.b.invInertia
         let share = 1 / (this.a.invMass + this.b.invMass + rn)
 
-        let v1 = this.a.velocity.add(
-            new Vector2(-pointA.y * this.a.angularVelocity, pointA.x * this.a.angularVelocity))
-        let v2 = this.b.velocity.add(
-            new Vector2(-pointB.y * this.b.angularVelocity, pointB.x * this.b.angularVelocity))
+        let v1 = this.a.velocity.add(new Vector2(-r1.y * this.a.angularVelocity, r1.x * this.a.angularVelocity))
+        let v2 = this.b.velocity.add(new Vector2(-r2.y * this.b.angularVelocity, r2.x * this.b.angularVelocity))
+        let rv = v2.sub(v1)
 
-        let bias = BIAS_FACTOR / delta * (offset.length - this.length)
-        let normalVelocity = -v2.sub(v1).dot(normal) + bias
-
-        let j = normalVelocity * share
+        let j = -rv.dot(normal) * share
         let impulse = normal.mul(j)
 
-        this.a.applyImpulse(impulse.neg(), pointA)
-        this.b.applyImpulse(impulse, pointB)
+        this.a.applyImpulse(impulse.neg(), r1)
+        this.b.applyImpulse(impulse, r2)
+
+        this.accumulated += j
+    }
+
+    private correctPositions()
+    {
+        let [r1, r2] = this.localPoints
+        let offset = this.a.position.add(r1).sub(this.b.position.add(r2))
+
+        let share = 1 / (this.a.invMass + this.b.invMass)
+        let correction = BIAS_FACTOR * (offset.length - this.length) * share
+
+        let normal = offset.normalize()
+        this.a.position = this.a.position.sub(normal.mul(correction * this.a.invMass))
+        this.b.position = this.b.position.add(normal.mul(correction * this.b.invMass))
     }
 
 
