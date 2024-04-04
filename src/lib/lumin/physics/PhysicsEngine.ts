@@ -78,8 +78,8 @@ export default class PhysicsEngine
             if (Collision.rayBounds(bounds, ray))
             {
                 let intersection = Collision.testRay(body, ray)
-                if (intersection !== null &&
-                    (min === null || intersection.distance < min.distance)) min = intersection
+                if (intersection !== null && (min === null || intersection.distance < min.distance))
+                    min = intersection
             }
         }
 
@@ -93,14 +93,14 @@ export default class PhysicsEngine
         let detector = new Detector(this.bodies)
         this.collisions = detector.detect()
 
+        for (let body of this.bodies) body.integrate(dt, this.gravity)
+
         for (let constraint of this.constraints) constraint.start()
         for (let i = 0; i < this.iterations; i++)
         {
-            for (let constraint of this.constraints) constraint.resolve(dt)
-            for (let collision of this.collisions) collision.resolve(dt)
+            for (let constraint of this.constraints) constraint.resolve()
+            for (let collision of this.collisions) collision.resolve()
         }
-
-        for (let body of this.bodies) body.integrate(dt, this.gravity)
     }
 
     public render(c: CanvasRenderingContext2D)

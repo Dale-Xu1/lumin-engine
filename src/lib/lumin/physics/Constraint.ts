@@ -56,12 +56,12 @@ export default class Constraint extends Component
         this.b.applyImpulse(impulse, r2)
     }
 
-    public resolve(dt: number)
+    public resolve()
     {
-        let [r1, r2] = this.localPoints
+        this.correctPositions()
 
-        let offset = this.a.position.add(r1).sub(this.b.position.add(r2))
-        let normal = offset.normalize()
+        let [r1, r2] = this.localPoints
+        let normal = this.a.position.add(r1).sub(this.b.position.add(r2)).normalize()
 
         let rn = r1.cross(normal) ** 2 * this.a.invInertia + r2.cross(normal) ** 2 * this.b.invInertia
         let share = 1 / (this.a.invMass + this.b.invMass + rn)
@@ -70,16 +70,26 @@ export default class Constraint extends Component
         let v2 = this.b.velocity.add(new Vector2(-r2.y * this.b.angularVelocity, r2.x * this.b.angularVelocity))
         let rv = v2.sub(v1)
 
-        let bias = BIAS_FACTOR / dt * (offset.length - this.length)
-        let normalVelocity = -rv.dot(normal) + bias
-
-        let j = normalVelocity * share
+        let j = -rv.dot(normal) * share
         let impulse = normal.mul(j)
 
         this.a.applyImpulse(impulse.neg(), r1)
         this.b.applyImpulse(impulse, r2)
 
         this.accumulated += j
+    }
+
+    private correctPositions()
+    {
+        let [r1, r2] = this.localPoints
+        let offset = this.a.position.add(r1).sub(this.b.position.add(r2))
+
+        let share = 1 / (this.a.invMass + this.b.invMass)
+        let correction = BIAS_FACTOR * (offset.length - this.length) * share
+
+        let normal = offset.normalize()
+        this.a.position = this.a.position.sub(normal.mul(correction * this.a.invMass))
+        this.b.position = this.b.position.add(normal.mul(correction * this.b.invMass))
     }
 
 
