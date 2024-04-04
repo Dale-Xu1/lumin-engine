@@ -31,16 +31,19 @@ export default class Manifold
     }
 
 
-    public resolve() { for (let contact of this.contacts) this.applyImpulse(contact) }
-    private applyImpulse(start: Vector2)
+    public resolve()
     {
         this.correctPositions()
+        for (let contact of this.contacts) this.applyImpulse(contact)
+    }
 
+    private applyImpulse(start: Vector2)
+    {
         let [r1, r2] = this.calculateContact(start)
         let normal = this.normal
 
         let rn = r1.cross(normal) ** 2 * this.a.invInertia + r2.cross(normal) ** 2 * this.b.invInertia
-        let share = 1 / (this.a.invMass + this.b.invMass + rn)
+        let share = 1 / (this.a.invMass + this.b.invMass + rn) / this.contacts.length
 
         let rv = this.relativeVelocity(r1, r2)
 
